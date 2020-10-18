@@ -1,6 +1,6 @@
-use libsudokusolver::do_thing;
+use sudoku::SudokuGrid;
 
 fn main() {
-    do_thing();
-    println!("Hello, world!");
+    let grid = SudokuGrid::from_chars(&['2'; 81]);
+    println!("{}", grid.to_html());
 }
