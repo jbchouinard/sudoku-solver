@@ -1,0 +1,15 @@
+[package]
+name = "sudokusolver"
+version = "0.1.0"
+authors = ["Jerome Boisvert-Chouinard <jerome_boisvertchouinard@trendmicro.com>"]
+edition = "2018"
+
+[lib]
+name = "libsudokusolver"
+path = "src/lib.rs"
+
+[[bin]]
+name = "sudokusolver"
+path = "src/main.rs"
+
+[dependencies]

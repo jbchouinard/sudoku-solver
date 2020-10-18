@@ -1,0 +1,150 @@
+<html>
+  <head>
+    <style>
+        html {
+            background: #CCCCCC;
+            text-align: center;
+        }
+        h1 {
+            margin: 1em auto;
+            font-family: monospace;
+            font-size: 36;
+            color: #111111;
+        }
+        .grid {
+            background: #FFFFFF;
+            margin: auto;
+            border: 1;
+            border-collapse: collapse;
+        }
+        .cell {
+            height:60px;
+            width:60px;
+            border:1px solid;
+            text-align:center;
+        }
+        .cell p {
+            font-family: monospace;
+            font-size: 36;
+            color: #5555bb;
+        }
+        .cell:first-child {
+            border-left:solid;
+        }
+        .cell:nth-child(3n) {
+            border-right:solid ;
+        }
+        .row:first-child {
+            border-top:solid;
+        }
+        .row:nth-child(3n) td {
+            border-bottom:solid ;
+        }
+
+    </style>
+  </head>
+  <body>
+    <h1>SudokuSolver</h1>
+    <table class="grid">
+      <tr class="row">
+        <td class="cell"><p>1</p></td>
+        <td class="cell"><p>2</p></td>
+        <td class="cell"><p>3</p></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+      </tr>
+      <tr class="row">
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+      </tr>
+      <tr class="row">
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+      </tr>
+      <tr class="row">
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+      </tr>
+      <tr class="row">
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+      </tr>
+      <tr class="row">
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+      </tr>
+      <tr class="row">
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+      </tr>
+      <tr class="row">
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+      </tr>
+      <tr class="row">
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+        <td class="cell"></td>
+      </tr>
+    </table>
+  </html>
+</body>
