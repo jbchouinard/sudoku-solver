@@ -2,10 +2,9 @@
 extern crate lazy_static;
 
 use std::convert::TryInto;
+use std::fmt;
 
 pub mod render;
-
-pub struct Error;
 
 #[derive(Copy, Clone)]
 pub enum SudokuCell {
@@ -35,6 +34,16 @@ impl SudokuGrid {
         }
     }
 
+    pub fn from_string(cell_values: &str) -> Result<SudokuGrid> {
+        if cell_values.len() != 81 {
+            Err(Error::new("Puzzle string must have 81 digits"))
+        } else {
+            let char_vec: Vec<char> = cell_values.chars().collect();
+            let char_arr: [char; 81] = (char_vec[0..81]).try_into().unwrap();
+            Ok(SudokuGrid::from_chars(&char_arr))
+        }
+    }
+
     pub fn from_chars(cell_values: &[char; 81]) -> SudokuGrid {
         let mut cells: Vec<SudokuCell> = Vec::new();
         for c in cell_values.iter() {
@@ -55,3 +64,30 @@ impl SudokuGrid {
         }
     }
 }
+
+#[derive(Debug)]
+pub struct Error {
+    details: String,
+}
+
+impl Error {
+    fn new(msg: &str) -> Error {
+        Error {
+            details: msg.to_string(),
+        }
+    }
+}
+
+impl std::error::Error for Error {
+    fn description(&self) -> &str {
+        &self.details
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.details)
+    }
+}
+
+pub type Result<T> = std::result::Result<T, Error>;
