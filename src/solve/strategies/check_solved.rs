@@ -1,6 +1,5 @@
 use crate::solve::strategy::SolveStrategy;
 use crate::{SudokuCell, SudokuGrid};
-
 pub struct CheckSolvedStrategy;
 
 impl SolveStrategy for CheckSolvedStrategy {

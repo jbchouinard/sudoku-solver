@@ -28,13 +28,11 @@ impl SudokuSolver {
         None
     }
 
-    pub fn solve(&self, sudoku: &SudokuGrid) -> (Vec<&dyn SolveStrategy>, SudokuGrid) {
-        let mut strats: Vec<&dyn SolveStrategy> = Vec::new();
+    pub fn solve(&self, sudoku: &SudokuGrid) -> SudokuGrid {
         let mut solution = sudoku.clone();
         loop {
             match self.solve_step(&solution) {
-                Some((strat, sol)) => {
-                    strats.push(strat);
+                Some((_, sol)) => {
                     solution = sol;
                 }
                 None => {
@@ -42,6 +40,6 @@ impl SudokuSolver {
                 }
             }
         }
-        (strats, solution)
+        solution
     }
 }

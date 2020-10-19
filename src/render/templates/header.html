@@ -1,0 +1,58 @@
+<html>
+<head>
+<style>
+    html {
+        text-align: center;
+        font-family: monospace;
+        font-size: 30;
+    }
+    h1 {
+        margin: 1em auto;
+        font-size: 36;
+        color: #111111;
+    }
+    .grid {
+        margin: auto;
+        border: 1px solid;
+        border-collapse: collapse;
+    }
+    .cell {
+        height: 63px;
+        width: 63px;
+        border: 1px solid;
+        text-align: center;
+    }
+    .cell p {
+        font-size: 44;
+    }
+    .cell:first-child {
+        border-left: solid;
+    }
+    .cell:nth-child(3n) {
+        border-right: solid ;
+    }
+    .row:first-child {
+        border-top: solid;
+    }
+    .row:nth-child(3n) td.cell {
+        border-bottom: solid ;
+    }
+    .mcell {
+        height: 17px;
+        width: 17px;
+        margin: auto;
+        padding: 0;
+        border: 0;
+        text-align: center;
+        font-size: 14;
+    }
+    .linkbox a {
+        color: #CF3F3F;
+        text-decoration: none;
+    }
+    .linkbox span {
+        color: #626262;
+    }
+</style>
+</head>
+<body>

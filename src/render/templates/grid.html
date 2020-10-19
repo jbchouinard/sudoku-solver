@@ -1,0 +1,11 @@
+<table class="grid">
+  {% for cell in cells -%}
+    {% if (loop.index0 % 9) == 0 -%}
+        <tr class="row">
+    {% endif -%}
+            <td class=cell>{{ cell }}</td>
+    {% if (loop.index % 9) == 0 -%}
+        </tr>
+    {% endif -%}
+  {% endfor -%}
+</table>

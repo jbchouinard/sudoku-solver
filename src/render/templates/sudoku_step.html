@@ -1,0 +1,21 @@
+{% include "header.html" -%}
+<h1>SudokuSolver</h1>
+<p>{{ strategy }}</p>
+<div class="linkbox">
+{% if link_prev != "" -%}
+<a href="index.html">&lt;|</a>
+<a href="{{ link_prev }}">&lt;&lt;</a>
+{% else -%}
+<span>&lt;|</span>
+<span>&lt;&lt;</span>
+{% endif -%}
+{% if link_next != "" -%}
+<a href="{{ link_next }}">&gt;&gt;</a>
+{% else -%}
+<span>&gt;&gt;</span>
+{% endif -%}
+</div>
+<div>
+{% include "grid.html" -%}
+</div>
+{% include "footer.html" -%}
