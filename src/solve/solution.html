@@ -1,0 +1,159 @@
+<html>
+  <head>
+    <style>
+        html {
+            background: #CCCCCC;
+            text-align: center;
+            font-family: monospace;
+        }
+        h1 {
+            margin: 1em auto;
+            font-size: 36;
+            color: #111111;
+        }
+        .grid {
+            background: #FFFFFF;
+            margin: auto;
+            border: 1px solid;
+            border-collapse: collapse;
+        }
+        .cell {
+            height: 60px;
+            width: 60px;
+            border: 1px solid;
+            text-align: center;
+        }
+        .cell p {
+            font-size: 44;
+            color: #4444aa;
+        }
+        .cell:first-child {
+            border-left: solid;
+        }
+        .cell:nth-child(3n) {
+            border-right: solid ;
+        }
+        .row:first-child {
+            border-top: solid;
+        }
+        .row:nth-child(3n) td.cell {
+            border-bottom: solid ;
+        }
+        .mcell {
+            height: 18px;
+            width: 18px;
+            margin: 0;
+            padding: 0;
+            border: 0;
+            text-align: center;
+            color: #6666cc;
+            font-size: 15;
+        }
+
+    </style>
+  </head>
+  <body>
+    <h1>SudokuSolver</h1>
+    <table class="grid">
+      <tr class="row">
+        <td class=cell><p>5</p></td>
+        <td class=cell><p>1</p></td>
+        <td class=cell><p>9</p></td>
+        <td class=cell><p>8</p></td>
+        <td class=cell><p>6</p></td>
+        <td class=cell><p>2</p></td>
+        <td class=cell><p>3</p></td>
+        <td class=cell><p>4</p></td>
+        <td class=cell><p>7</p></td>
+        </tr>
+        <tr class="row">
+        <td class=cell><p>6</p></td>
+        <td class=cell><p>7</p></td>
+        <td class=cell><p>4</p></td>
+        <td class=cell><p>5</p></td>
+        <td class=cell><p>3</p></td>
+        <td class=cell><p>1</p></td>
+        <td class=cell><p>8</p></td>
+        <td class=cell><p>2</p></td>
+        <td class=cell><p>9</p></td>
+        </tr>
+        <tr class="row">
+        <td class=cell><p>8</p></td>
+        <td class=cell><p>3</p></td>
+        <td class=cell><p>2</p></td>
+        <td class=cell><p>9</p></td>
+        <td class=cell><p>4</p></td>
+        <td class=cell><p>7</p></td>
+        <td class=cell><p>1</p></td>
+        <td class=cell><p>5</p></td>
+        <td class=cell><p>6</p></td>
+        </tr>
+        <tr class="row">
+        <td class=cell><p>9</p></td>
+        <td class=cell><p>8</p></td>
+        <td class=cell><p>5</p></td>
+        <td class=cell><p>4</p></td>
+        <td class=cell><p>1</p></td>
+        <td class=cell><p>6</p></td>
+        <td class=cell><p>7</p></td>
+        <td class=cell><p>3</p></td>
+        <td class=cell><p>2</p></td>
+        </tr>
+        <tr class="row">
+        <td class=cell><p>1</p></td>
+        <td class=cell><p>4</p></td>
+        <td class=cell><p>3</p></td>
+        <td class=cell><p>7</p></td>
+        <td class=cell><p>2</p></td>
+        <td class=cell><p>8</p></td>
+        <td class=cell><p>6</p></td>
+        <td class=cell><p>9</p></td>
+        <td class=cell><p>5</p></td>
+        </tr>
+        <tr class="row">
+        <td class=cell><p>7</p></td>
+        <td class=cell><p>2</p></td>
+        <td class=cell><p>6</p></td>
+        <td class=cell><p>3</p></td>
+        <td class=cell><p>5</p></td>
+        <td class=cell><p>9</p></td>
+        <td class=cell><p>4</p></td>
+        <td class=cell><p>1</p></td>
+        <td class=cell><p>8</p></td>
+        </tr>
+        <tr class="row">
+        <td class=cell><p>2</p></td>
+        <td class=cell><p>5</p></td>
+        <td class=cell><p>7</p></td>
+        <td class=cell><p>1</p></td>
+        <td class=cell><p>8</p></td>
+        <td class=cell><p>3</p></td>
+        <td class=cell><p>9</p></td>
+        <td class=cell><p>6</p></td>
+        <td class=cell><p>4</p></td>
+        </tr>
+        <tr class="row">
+        <td class=cell><p>4</p></td>
+        <td class=cell><p>9</p></td>
+        <td class=cell><p>1</p></td>
+        <td class=cell><p>6</p></td>
+        <td class=cell><p>7</p></td>
+        <td class=cell><p>5</p></td>
+        <td class=cell><p>2</p></td>
+        <td class=cell><p>8</p></td>
+        <td class=cell><p>3</p></td>
+        </tr>
+        <tr class="row">
+        <td class=cell><p>3</p></td>
+        <td class=cell><p>6</p></td>
+        <td class=cell><p>8</p></td>
+        <td class=cell><p>2</p></td>
+        <td class=cell><p>9</p></td>
+        <td class=cell><p>4</p></td>
+        <td class=cell><p>5</p></td>
+        <td class=cell><p>7</p></td>
+        <td class=cell><p>1</p></td>
+        </tr>
+        </table>
+  </html>
+</body>

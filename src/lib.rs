@@ -5,8 +5,9 @@ use std::convert::TryInto;
 use std::fmt;
 
 pub mod render;
+pub mod solve;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum SudokuCell {
     Solved(u8),
     Unsolved([bool; 9]),
@@ -15,14 +16,29 @@ pub enum SudokuCell {
 impl SudokuCell {
     pub fn new(val: u8) -> SudokuCell {
         if (val >= 1) && (val <= 9) {
-            SudokuCell::Solved(val)
+            Self::Solved(val)
         } else {
-            SudokuCell::Unsolved([true; 9])
+            Self::Unsolved([true; 9])
+        }
+    }
+
+    pub fn candidates(&self) -> Option<Vec<u8>> {
+        match self {
+            Self::Solved(_) => None,
+            Self::Unsolved(possible) => {
+                let mut candx: Vec<u8> = vec![];
+                for i in 0..9 {
+                    if possible[i] {
+                        candx.push((i + 1).try_into().unwrap());
+                    }
+                }
+                Some(candx)
+            }
         }
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub struct SudokuGrid {
     grid: [SudokuCell; 81],
 }
@@ -32,6 +48,26 @@ impl SudokuGrid {
         SudokuGrid {
             grid: [SudokuCell::new(0); 81],
         }
+    }
+
+    fn pos(x: u8, y: u8) -> usize {
+        if (x == 0) || (x > 9) || (y == 0) || (y > 9) {
+            panic!("out of bounds");
+        }
+        ((x - 1) + (y - 1) * 9).into()
+    }
+
+    pub fn box_range(coord: u8) -> std::ops::Range<u8> {
+        let low = 1 + ((coord - 1) / 3) * 3;
+        low..low + 3
+    }
+
+    pub fn get_cell(&self, x: u8, y: u8) -> &SudokuCell {
+        &self.grid[SudokuGrid::pos(x, y)]
+    }
+
+    pub fn set_cell(&mut self, x: u8, y: u8, cell: SudokuCell) {
+        self.grid[SudokuGrid::pos(x, y)] = cell;
     }
 
     pub fn from_string(cell_values: &str) -> Result<SudokuGrid> {
