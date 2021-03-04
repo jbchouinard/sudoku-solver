@@ -1,8 +1,8 @@
 use quicli::prelude::*;
 use structopt::StructOpt;
-use sudoku::render::explainer::SolutionExplainer;
-use sudoku::solve::*;
-use sudoku::SudokuGrid;
+use sudoku::html::SolverRenderer;
+use sudoku::solve::{strategies::all_strategies, Solver};
+use sudoku::Grid;
 
 #[derive(Debug, StructOpt)]
 struct Cli {
@@ -13,10 +13,8 @@ struct Cli {
 
 fn main() -> CliResult {
     let args = Cli::from_args();
-    let sudoku = SudokuGrid::from_string(&args.puzzle)?;
-    let solver = SudokuSolver::new(all_strategies());
-    let mut explainer = SolutionExplainer::new(solver);
-    explainer.solve(&sudoku);
-    explainer.render(&args.outdir)?;
+    let sudoku = Grid::from_string(&args.puzzle)?;
+    let solver = SolverRenderer::new(Solver::new(all_strategies()));
+    solver.solve_and_render(&sudoku, &args.outdir)?;
     Ok(())
 }

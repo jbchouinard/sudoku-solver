@@ -4,17 +4,17 @@ extern crate lazy_static;
 use std::convert::TryInto;
 use std::fmt;
 
-pub mod render;
+pub mod html;
 pub mod solve;
 
 #[derive(Copy, Clone, PartialEq, Eq)]
-pub enum SudokuCell {
+pub enum Cell {
     Solved(u8),
     Unsolved([bool; 9]),
 }
 
-impl SudokuCell {
-    pub fn new(val: u8) -> SudokuCell {
+impl Cell {
+    pub fn new(val: u8) -> Cell {
         if (val >= 1) && (val <= 9) {
             Self::Solved(val)
         } else {
@@ -39,14 +39,14 @@ impl SudokuCell {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
-pub struct SudokuGrid {
-    grid: [SudokuCell; 81],
+pub struct Grid {
+    grid: [Cell; 81],
 }
 
-impl SudokuGrid {
-    pub fn new() -> SudokuGrid {
-        SudokuGrid {
-            grid: [SudokuCell::new(0); 81],
+impl Grid {
+    pub fn new() -> Grid {
+        Grid {
+            grid: [Cell::new(0); 81],
         }
     }
 
@@ -62,26 +62,26 @@ impl SudokuGrid {
         low..low + 3
     }
 
-    pub fn get_cell(&self, x: u8, y: u8) -> &SudokuCell {
-        &self.grid[SudokuGrid::pos(x, y)]
+    pub fn get_cell(&self, x: u8, y: u8) -> &Cell {
+        &self.grid[Grid::pos(x, y)]
     }
 
-    pub fn set_cell(&mut self, x: u8, y: u8, cell: SudokuCell) {
-        self.grid[SudokuGrid::pos(x, y)] = cell;
+    pub fn set_cell(&mut self, x: u8, y: u8, cell: Cell) {
+        self.grid[Grid::pos(x, y)] = cell;
     }
 
-    pub fn from_string(cell_values: &str) -> Result<SudokuGrid> {
+    pub fn from_string(cell_values: &str) -> Result<Grid> {
         if cell_values.len() != 81 {
             Err(Error::new("Puzzle string must have 81 digits"))
         } else {
             let char_vec: Vec<char> = cell_values.chars().collect();
             let char_arr: [char; 81] = (char_vec[0..81]).try_into().unwrap();
-            Ok(SudokuGrid::from_chars(&char_arr))
+            Ok(Grid::from_chars(&char_arr))
         }
     }
 
-    pub fn from_chars(cell_values: &[char; 81]) -> SudokuGrid {
-        let mut cells: Vec<SudokuCell> = Vec::new();
+    pub fn from_chars(cell_values: &[char; 81]) -> Grid {
+        let mut cells: Vec<Cell> = Vec::new();
         for c in cell_values.iter() {
             let n: u8 = match c.to_digit(10) {
                 Some(n) => {
@@ -93,9 +93,9 @@ impl SudokuGrid {
                 }
                 None => 0,
             };
-            cells.push(SudokuCell::new(n));
+            cells.push(Cell::new(n));
         }
-        SudokuGrid {
+        Grid {
             grid: cells[0..81].try_into().unwrap(),
         }
     }

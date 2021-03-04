@@ -1,24 +1,16 @@
-use crate::solve::strategies::{CheckSolvedStrategy, PruneCandidatesStrategy};
-use crate::solve::strategy::SolveStrategy;
-use crate::SudokuGrid;
+use crate::solve::strategies::Strategy;
+use crate::Grid;
 
-pub fn all_strategies() -> Vec<Box<dyn SolveStrategy>> {
-    let mut strats: Vec<Box<dyn SolveStrategy>> = Vec::new();
-    strats.push(Box::new(CheckSolvedStrategy));
-    strats.push(Box::new(PruneCandidatesStrategy));
-    strats
+pub struct Solver {
+    strategies: Vec<Box<dyn Strategy>>,
 }
 
-pub struct SudokuSolver {
-    strategies: Vec<Box<dyn SolveStrategy>>,
-}
-
-impl SudokuSolver {
-    pub fn new(strategies: Vec<Box<dyn SolveStrategy>>) -> SudokuSolver {
-        SudokuSolver { strategies }
+impl Solver {
+    pub fn new(strategies: Vec<Box<dyn Strategy>>) -> Solver {
+        Solver { strategies }
     }
 
-    pub fn solve_step(&self, sudoku: &SudokuGrid) -> Option<(&dyn SolveStrategy, SudokuGrid)> {
+    pub fn solve_step(&self, sudoku: &Grid) -> Option<(&dyn Strategy, Grid)> {
         for strat in &self.strategies {
             let solved = strat.solve(&sudoku);
             if &solved != sudoku {
@@ -28,7 +20,7 @@ impl SudokuSolver {
         None
     }
 
-    pub fn solve(&self, sudoku: &SudokuGrid) -> SudokuGrid {
+    pub fn solve(&self, sudoku: &Grid) -> Grid {
         let mut solution = sudoku.clone();
         loop {
             match self.solve_step(&solution) {
