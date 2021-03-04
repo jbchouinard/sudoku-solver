@@ -48,7 +48,7 @@ impl Strategy for PruneCandidates {
         new_grid
     }
     fn name(&self) -> String {
-        "Prune Candidates".to_string()
+        "[Trivial] Prune Candidates".to_string()
     }
 }
 
@@ -69,6 +69,6 @@ impl Strategy for PromoteUniqueCandidate {
         new_grid
     }
     fn name(&self) -> String {
-        "Promote Unique Candidates".to_string()
+        "[Trivial] Promote Unique Candidates".to_string()
     }
 }
