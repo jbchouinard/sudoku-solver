@@ -1,14 +1,14 @@
 # SudokuSolver
 
-This is a toy sudoku solver written in  Rust. There arn't any real
-strategies implemented yet so this will only solve the most trivial
-of puzzles.
+This is a toy sudoku solver written in  Rust. There arn't many
+strategies implemented yet so this will only solve pretty easy
+puzzles.
 
 ## Usage
 
 ```bash
 mkdir html
-sudokusolver PUZZLE
+sudokusolver -o html PUZZLE
 ```
 
 The solution steps will be written to html/. PUZZLE is the sudoku to be
