@@ -16,7 +16,6 @@ solved as a string of 81 digits, where unsolved cells are "0".
 
 ## Todo
 - Unit tests
-- Add iterators on SudokuGrid, refactor strategies
 - Easy strategies from SudokuWiki
 - Make strategies configurable
 - Highlight logic in solve steps
