@@ -3,6 +3,7 @@ extern crate lazy_static;
 
 use std::convert::TryInto;
 use std::fmt;
+use std::vec::IntoIter;
 
 pub mod html;
 pub mod solve;
@@ -22,6 +23,15 @@ impl Cell {
         }
     }
 
+    pub fn to_solved(self) -> Self {
+        if let Some(candidates) = self.candidates() {
+            if candidates.len() == 1 {
+                return Cell::Solved(candidates[0]);
+            }
+        }
+        self.clone()
+    }
+
     pub fn candidates(&self) -> Option<Vec<u8>> {
         match self {
             Self::Solved(_) => None,
@@ -39,6 +49,83 @@ impl Cell {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
+pub struct Position {
+    col: u8,
+    row: u8,
+}
+
+impl Position {
+    pub fn new(col: u8, row: u8) -> Position {
+        if (col < 1) || (col > 9) || (row < 1) || (row > 9) {
+            panic!("out of bounds");
+        }
+        Self { col, row }
+    }
+
+    pub fn row(&self) -> u8 {
+        self.row
+    }
+
+    pub fn col(&self) -> u8 {
+        self.col
+    }
+
+    pub fn index(&self) -> usize {
+        ((self.col - 1) + (self.row - 1) * 9).into()
+    }
+
+    fn box_range(coord: u8) -> std::ops::Range<u8> {
+        let low = 1 + ((coord - 1) / 3) * 3;
+        low..low + 3
+    }
+
+    pub fn iter_grid() -> IntoIter<Self> {
+        let mut v = vec![];
+        for col in 1..=9 {
+            for row in 1..=9 {
+                v.push(Position::new(col, row));
+            }
+        }
+        v.into_iter()
+    }
+
+    pub fn iter_row(&self) -> IntoIter<Self> {
+        let mut v = vec![];
+        for col in 1..=9 {
+            v.push(Position::new(col, self.row));
+        }
+        v.into_iter()
+    }
+
+    pub fn iter_col(&self) -> IntoIter<Self> {
+        let mut v = vec![];
+        for row in 1..=9 {
+            v.push(Position::new(self.col, row));
+        }
+        v.into_iter()
+    }
+
+    pub fn iter_box(&self) -> IntoIter<Self> {
+        let mut v = vec![];
+        for col in Self::box_range(self.col) {
+            for row in Self::box_range(self.row) {
+                v.push(Position::new(col, row))
+            }
+        }
+        v.into_iter()
+    }
+
+    pub fn iter_seen(&self) -> IntoIter<Self> {
+        // TODO: don't iterate over same cells more than once
+        self.iter_row()
+            .chain(self.iter_col())
+            .chain(self.iter_box())
+            .collect::<Vec<Self>>()
+            .into_iter()
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub struct Grid {
     grid: [Cell; 81],
 }
@@ -50,24 +137,12 @@ impl Grid {
         }
     }
 
-    fn pos(x: u8, y: u8) -> usize {
-        if (x == 0) || (x > 9) || (y == 0) || (y > 9) {
-            panic!("out of bounds");
-        }
-        ((x - 1) + (y - 1) * 9).into()
+    pub fn get_cell(&self, pos: Position) -> &Cell {
+        &self.grid[pos.index()]
     }
 
-    pub fn box_range(coord: u8) -> std::ops::Range<u8> {
-        let low = 1 + ((coord - 1) / 3) * 3;
-        low..low + 3
-    }
-
-    pub fn get_cell(&self, x: u8, y: u8) -> &Cell {
-        &self.grid[Grid::pos(x, y)]
-    }
-
-    pub fn set_cell(&mut self, x: u8, y: u8, cell: Cell) {
-        self.grid[Grid::pos(x, y)] = cell;
+    pub fn set_cell(&mut self, pos: Position, cell: Cell) {
+        self.grid[pos.index()] = cell.to_solved();
     }
 
     pub fn from_string(cell_values: &str) -> Result<Grid> {

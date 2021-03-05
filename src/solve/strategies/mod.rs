@@ -7,9 +7,8 @@ pub trait Strategy {
     fn name(&self) -> String;
 }
 
-use trivial::PromoteUniqueCandidate;
 use trivial::PruneCandidates;
 
 pub fn all_strategies() -> Vec<Box<dyn Strategy>> {
-    vec![Box::new(PromoteUniqueCandidate), Box::new(PruneCandidates)]
+    vec![Box::new(PruneCandidates)]
 }
