@@ -9,17 +9,77 @@ pub mod html;
 pub mod solve;
 
 #[derive(Copy, Clone, PartialEq, Eq)]
+pub struct CellValue {
+    value: u8,
+}
+
+impl CellValue {
+    pub fn new(val: u8) -> Self {
+        if (val < 1) || (val > 9) {
+            panic!("invalid CellValue");
+        }
+        Self { value: val }
+    }
+}
+
+impl From<u8> for CellValue {
+    fn from(val: u8) -> Self {
+        Self::new(val)
+    }
+}
+
+impl Into<u8> for CellValue {
+    fn into(self) -> u8 {
+        self.value
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub struct Candidates {
+    possible: [bool; 9],
+}
+
+impl Candidates {
+    pub fn new(possible: [bool; 9]) -> Self {
+        Self { possible }
+    }
+
+    pub fn to_vec(&self) -> Vec<CellValue> {
+        let mut v = vec![];
+        for i in 0..9 {
+            if self.possible[i] {
+                v.push(CellValue::new((i + 1).try_into().unwrap()));
+            }
+        }
+        v
+    }
+
+    fn index(v: &CellValue) -> usize {
+        let n: u8 = v.clone().into();
+        (n - 1).into()
+    }
+
+    pub fn add(&mut self, v: &CellValue) {
+        self.possible[Self::index(v)] = false;
+    }
+
+    pub fn remove(&mut self, v: &CellValue) {
+        self.possible[Self::index(v)] = false;
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum Cell {
-    Solved(u8),
-    Unsolved([bool; 9]),
+    Solved(CellValue),
+    Unsolved(Candidates),
 }
 
 impl Cell {
     pub fn new(val: u8) -> Cell {
         if (val >= 1) && (val <= 9) {
-            Self::Solved(val)
+            Self::Solved(val.into())
         } else {
-            Self::Unsolved([true; 9])
+            Self::Unsolved(Candidates::new([true; 9]))
         }
     }
 
@@ -32,18 +92,10 @@ impl Cell {
         self.clone()
     }
 
-    pub fn candidates(&self) -> Option<Vec<u8>> {
+    pub fn candidates(&self) -> Option<Vec<CellValue>> {
         match self {
             Self::Solved(_) => None,
-            Self::Unsolved(possible) => {
-                let mut candx: Vec<u8> = vec![];
-                for i in 0..9 {
-                    if possible[i] {
-                        candx.push((i + 1).try_into().unwrap());
-                    }
-                }
-                Some(candx)
-            }
+            Self::Unsolved(candidates) => Some(candidates.to_vec()),
         }
     }
 }

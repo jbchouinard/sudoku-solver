@@ -65,11 +65,13 @@ impl<'a> CellRenderer<'a> {
         let mut context = Context::new();
         match self.cell {
             Cell::Solved(cell) => {
-                context.insert("cell", &cell);
+                let v: u8 = cell.clone().into();
+                context.insert("cell", &v);
                 TERA.render("number.html", &context).unwrap()
             }
             Cell::Unsolved(mcells) => {
-                context.insert("mcells", &mcells);
+                let v: Vec<u8> = mcells.to_vec().into_iter().map(|v| v.into()).collect();
+                context.insert("mcells", &v);
                 TERA.render("mark.html", &context).unwrap()
             }
         }

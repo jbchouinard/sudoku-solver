@@ -10,13 +10,12 @@ impl Strategy for PruneCandidates {
             new_grid.set_cell(
                 p,
                 match grid.get_cell(p) {
-                    Cell::Solved(n) => Cell::Solved(*n),
+                    Cell::Solved(n) => Cell::Solved(n.clone()),
                     Cell::Unsolved(candidates) => {
                         let mut pruned = candidates.clone();
                         for seen in p.iter_seen() {
-                            if let Cell::Solved(n) = grid.get_cell(seen) {
-                                let i: usize = (n - 1).into();
-                                pruned[i] = false;
+                            if let Cell::Solved(v) = grid.get_cell(seen) {
+                                pruned.remove(v);
                             }
                         }
                         Cell::Unsolved(pruned)
