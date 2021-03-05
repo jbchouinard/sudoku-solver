@@ -1,16 +1,114 @@
-pub mod hidden_single;
-pub mod prune_candidates;
-
-use crate::Grid;
+use crate::{Cell, Grid, Position, Unit};
 
 pub use hidden_single::HiddenSingle;
+pub use naked_pair::NakedPair;
+pub use naked_triple::NakedTriple;
 pub use prune_candidates::PruneCandidates;
 
-pub trait Strategy {
-    fn solve(&self, grid: &Grid) -> Grid;
-    fn name(&self) -> String;
+mod hidden_single;
+mod naked_pair;
+mod naked_triple;
+mod prune_candidates;
+
+pub fn all_strategies() -> Vec<Strategy> {
+    vec![
+        Strategy::Cell(Box::new(PruneCandidates)),
+        Strategy::Unit(Box::new(HiddenSingle)),
+        Strategy::Unit(Box::new(NakedPair)),
+        Strategy::Unit(Box::new(NakedTriple)),
+    ]
 }
 
-pub fn all_strategies() -> Vec<Box<dyn Strategy>> {
-    vec![Box::new(PruneCandidates), Box::new(HiddenSingle)]
+pub enum Difficulty {
+    Trivial = 0,
+    Standard = 1,
+}
+
+impl ToString for Difficulty {
+    fn to_string(&self) -> std::string::String {
+        match self {
+            Self::Trivial => "Trivial".to_string(),
+            Self::Standard => "Standard".to_string(),
+        }
+    }
+}
+
+pub trait AnyStrategy {
+    fn name(&self) -> String;
+    fn difficulty(&self) -> Difficulty;
+}
+
+pub trait CellStrategy: AnyStrategy {
+    fn solve_cell(&self, grid: &Grid, pos: Position) -> Cell;
+}
+
+pub trait UnitStrategy: AnyStrategy {
+    fn solve_unit(&self, grid: &Grid, unit: &Unit) -> Unit;
+}
+
+pub trait GridStrategy: AnyStrategy {
+    fn solve_grid(&self, grid: &Grid) -> Grid;
+}
+
+pub enum Strategy {
+    Cell(Box<dyn CellStrategy>),
+    Unit(Box<dyn UnitStrategy>),
+    Grid(Box<dyn GridStrategy>),
+}
+
+impl Strategy {
+    pub fn name(&self) -> String {
+        match self {
+            Self::Cell(s) => s.name(),
+            Self::Unit(s) => s.name(),
+            Self::Grid(s) => s.name(),
+        }
+    }
+
+    pub fn difficulty(&self) -> Difficulty {
+        match self {
+            Self::Cell(s) => s.difficulty(),
+            Self::Unit(s) => s.difficulty(),
+            Self::Grid(s) => s.difficulty(),
+        }
+    }
+
+    pub fn solve(&self, grid: &Grid) -> Grid {
+        match self {
+            Self::Cell(strategy) => {
+                let mut solved_grid = grid.clone();
+                for p in Position::grid_vec() {
+                    let solved_cell = strategy.solve_cell(grid, p);
+                    solved_grid.set_cell(p, solved_cell);
+                }
+                solved_grid
+            }
+            Self::Unit(strategy) => {
+                let mut solved_grid = grid.clone();
+                // Iterate each unit (row, col, box)
+                for r in 1..=9 {
+                    let pos = Position::new(1, r);
+                    let unit = grid.get_cells(pos.row_vec(true));
+                    let solved_unit = strategy.solve_unit(grid, &unit);
+                    solved_grid.set_cells(solved_unit);
+                }
+                for c in 1..=9 {
+                    let pos = Position::new(c, 1);
+                    let unit = grid.get_cells(pos.col_vec(true));
+                    let solved_unit = strategy.solve_unit(grid, &unit);
+                    solved_grid.set_cells(solved_unit);
+                }
+                for r in (1..=9).step_by(3) {
+                    for c in (1..=9).step_by(3) {
+                        let pos = Position::new(c, r);
+                        let unit = grid.get_cells(pos.box_vec(true));
+                        let solved_unit = strategy.solve_unit(grid, &unit);
+                        solved_grid.set_cells(solved_unit);
+                    }
+                }
+                solved_grid
+            }
+            Self::Grid(strategy) => strategy.solve_grid(grid),
+        }
+    }
 }

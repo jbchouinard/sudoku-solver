@@ -1,24 +1,23 @@
-#[macro_use]
-extern crate lazy_static;
-
+use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fmt;
-use std::vec::IntoIter;
+use std::num::ParseIntError;
+use std::str::FromStr;
 
+#[cfg(feature = "html")]
 pub mod html;
+
 pub mod solver;
 
-#[derive(Copy, Clone, PartialEq, Eq)]
-pub struct CellValue {
-    value: u8,
-}
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
+pub struct CellValue(u8);
 
 impl CellValue {
     pub fn new(val: u8) -> Self {
         if (val < 1) || (val > 9) {
             panic!("invalid CellValue");
         }
-        Self { value: val }
+        Self(val)
     }
 }
 
@@ -30,28 +29,53 @@ impl From<u8> for CellValue {
 
 impl Into<u8> for CellValue {
     fn into(self) -> u8 {
-        self.value
+        self.0
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
-pub struct Candidates {
-    possible: [bool; 9],
+impl Into<usize> for CellValue {
+    fn into(self) -> usize {
+        let n: u8 = self.into();
+        n.into()
+    }
 }
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub struct Candidates([bool; 9]);
 
 impl Candidates {
     pub fn new(possible: [bool; 9]) -> Self {
-        Self { possible }
+        Self(possible)
     }
 
     pub fn to_vec(&self) -> Vec<CellValue> {
         let mut v = vec![];
         for i in 0..9 {
-            if self.possible[i] {
+            if self.0[i] {
                 v.push(CellValue::new((i + 1).try_into().unwrap()));
             }
         }
         v
+    }
+
+    pub fn count(&self) -> u8 {
+        let mut c: u8 = 0;
+        for i in 0..9 {
+            if self.0[i] {
+                c = c + 1;
+            }
+        }
+        c
+    }
+
+    pub fn combine(&self, other: &Candidates) -> Candidates {
+        let mut possible = [false; 9];
+        for i in 0..9 {
+            if self.0[i] || other.0[i] {
+                possible[i] = true;
+            }
+        }
+        Candidates(possible)
     }
 
     fn index(v: &CellValue) -> usize {
@@ -60,26 +84,26 @@ impl Candidates {
     }
 
     pub fn add(&mut self, v: &CellValue) {
-        self.possible[Self::index(v)] = false;
+        self.0[Self::index(v)] = false;
     }
 
     pub fn remove(&mut self, v: &CellValue) {
-        self.possible[Self::index(v)] = false;
+        self.0[Self::index(v)] = false;
     }
 
     pub fn can_be(&self, v: &CellValue) -> bool {
-        self.possible[Self::index(v)]
+        self.0[Self::index(v)]
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum Cell {
     Solved(CellValue),
     Unsolved(Candidates),
 }
 
 impl Cell {
-    pub fn new(val: u8) -> Cell {
+    pub fn from_u8(val: u8) -> Cell {
         if (val >= 1) && (val <= 9) {
             Self::Solved(val.into())
         } else {
@@ -94,16 +118,6 @@ impl Cell {
             }
         }
         self
-    }
-
-    pub fn to_string(&self) -> String {
-        match self {
-            Self::Solved(v) => {
-                let n: u8 = v.clone().into();
-                n.to_string()
-            }
-            Self::Unsolved(_) => "0".to_string(),
-        }
     }
 
     pub fn candidates(&self) -> Option<Vec<CellValue>> {
@@ -121,7 +135,27 @@ impl Cell {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+impl ToString for Cell {
+    fn to_string(&self) -> std::string::String {
+        match self {
+            Self::Solved(v) => {
+                let n: u8 = v.clone().into();
+                n.to_string()
+            }
+            Self::Unsolved(_) => "0".to_string(),
+        }
+    }
+}
+
+impl FromStr for Cell {
+    type Err = Error;
+    fn from_str(s: &str) -> Result<Self> {
+        let n: u8 = s.parse::<u8>()?;
+        Ok(Cell::from_u8(n))
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub struct Position {
     col: u8,
     row: u8,
@@ -152,37 +186,37 @@ impl Position {
         low..low + 3
     }
 
-    pub fn iter_grid() -> IntoIter<Self> {
+    pub fn grid_vec() -> Vec<Self> {
         let mut v = vec![];
         for col in 1..=9 {
             for row in 1..=9 {
                 v.push(Position::new(col, row));
             }
         }
-        v.into_iter()
+        v
     }
 
-    pub fn iter_row(&self, include_self: bool) -> IntoIter<Self> {
+    pub fn row_vec(&self, include_self: bool) -> Vec<Self> {
         let mut v = vec![];
         for col in 1..=9 {
             if include_self || col != self.col {
                 v.push(Position::new(col, self.row));
             }
         }
-        v.into_iter()
+        v
     }
 
-    pub fn iter_col(&self, include_self: bool) -> IntoIter<Self> {
+    pub fn col_vec(&self, include_self: bool) -> Vec<Self> {
         let mut v = vec![];
         for row in 1..=9 {
             if include_self || row != self.row {
                 v.push(Position::new(self.col, row));
             }
         }
-        v.into_iter()
+        v
     }
 
-    pub fn iter_box(&self, include_self: bool) -> IntoIter<Self> {
+    pub fn box_vec(&self, include_self: bool) -> Vec<Self> {
         let mut v = vec![];
         for col in Self::box_range(self.col) {
             for row in Self::box_range(self.row) {
@@ -191,77 +225,125 @@ impl Position {
                 }
             }
         }
-        v.into_iter()
+        v
     }
 
-    pub fn iter_seen(&self, include_self: bool) -> IntoIter<Self> {
-        // TODO: don't iterate over same cells more than once
-        self.iter_row(include_self)
-            .chain(self.iter_col(include_self))
-            .chain(self.iter_box(include_self))
-            .collect::<Vec<Self>>()
-            .into_iter()
+    pub fn seen_vec(&self, include_self: bool) -> Vec<Self> {
+        let mut v = self.box_vec(include_self);
+        for p in self.col_vec(include_self).into_iter() {
+            if !v.contains(&p) {
+                v.push(p)
+            }
+        }
+        for p in self.row_vec(include_self).into_iter() {
+            if !v.contains(&p) {
+                v.push(p)
+            }
+        }
+        v
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct Grid {
-    grid: [Cell; 81],
+    cells: [Cell; 81],
 }
 
 impl Grid {
     pub fn new() -> Grid {
         Grid {
-            grid: [Cell::new(0); 81],
+            cells: [Cell::from_u8(0); 81],
         }
     }
 
-    pub fn get_cell(&self, pos: Position) -> &Cell {
-        &self.grid[pos.index()]
+    pub fn get_cell(&self, pos: Position) -> Cell {
+        self.cells[pos.index()]
     }
 
     pub fn set_cell(&mut self, pos: Position, cell: Cell) {
-        self.grid[pos.index()] = cell.to_solved();
+        self.cells[pos.index()] = cell.to_solved();
     }
 
-    pub fn from_string(cell_values: &str) -> Result<Grid> {
-        if cell_values.len() != 81 {
-            Err(Error::new("Puzzle string must have 81 digits"))
-        } else {
-            let char_vec: Vec<char> = cell_values.chars().collect();
-            let char_arr: [char; 81] = (char_vec[0..81]).try_into().unwrap();
-            Ok(Grid::from_chars(&char_arr))
+    pub fn get_cells(&self, pos: Vec<Position>) -> Unit {
+        let mut u = Unit::new();
+        for p in pos {
+            u.insert(p, self.get_cell(p));
+        }
+        u
+    }
+
+    pub fn set_cells(&mut self, unit: Unit) {
+        for (p, cell) in unit.into_iter() {
+            self.set_cell(p, cell);
         }
     }
 
-    pub fn to_string(&self) -> String {
+    pub fn is_solved(&self) -> bool {
+        for i in 0..81 {
+            if let Cell::Unsolved(_) = self.cells[i] {
+                return false;
+            }
+        }
+        true
+    }
+
+    pub fn solved_diff_from(&self, solved: &Grid) -> GridSolvedDiff {
+        let mut cells_solved = 0;
+        let mut candidates_eliminated = 0;
+        for i in 0..81 {
+            let cell = self.cells[i];
+            let solcell = solved.cells[i];
+            if let Cell::Unsolved(candx) = cell {
+                match solcell {
+                    Cell::Solved(_) => {
+                        cells_solved += 1;
+                    }
+                    Cell::Unsolved(solved_candx) => {
+                        candidates_eliminated += candx.to_vec().len() - solved_candx.to_vec().len()
+                    }
+                }
+            }
+        }
+        GridSolvedDiff {
+            cells_solved,
+            candidates_eliminated: candidates_eliminated.try_into().unwrap(),
+        }
+    }
+}
+
+impl FromStr for Grid {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Grid> {
+        if s.len() != 81 {
+            return Err(Error::new("Puzzle string must have 81 characters"));
+        }
+        let mut cells = vec![];
+        for i in 0..81 {
+            cells.push(Cell::from_str(&s[i..i + 1]).unwrap())
+        }
+        Ok(Grid {
+            cells: cells[0..81].try_into().unwrap(),
+        })
+    }
+}
+
+impl ToString for Grid {
+    fn to_string(&self) -> String {
         let mut parts = vec![];
-        for v in self.grid.iter() {
+        for v in self.cells.iter() {
             parts.push(v.to_string());
         }
         parts.join("")
     }
-
-    pub fn from_chars(cell_values: &[char; 81]) -> Grid {
-        let mut cells: Vec<Cell> = Vec::new();
-        for c in cell_values.iter() {
-            let n: u8 = match c.to_digit(10) {
-                Some(n) => {
-                    if (n >= 1) && (n <= 9) {
-                        n.try_into().unwrap()
-                    } else {
-                        0
-                    }
-                }
-                None => 0,
-            };
-            cells.push(Cell::new(n));
-        }
-        Grid {
-            grid: cells[0..81].try_into().unwrap(),
-        }
-    }
 }
+
+pub struct GridSolvedDiff {
+    pub cells_solved: u16,
+    pub candidates_eliminated: u16,
+}
+
+type Unit = HashMap<Position, Cell>;
 
 #[derive(Debug)]
 pub struct Error {
@@ -273,6 +355,12 @@ impl Error {
         Error {
             details: msg.to_string(),
         }
+    }
+}
+
+impl From<ParseIntError> for Error {
+    fn from(_: ParseIntError) -> Self {
+        Error::new("Error parsing int")
     }
 }
 

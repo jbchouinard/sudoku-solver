@@ -1,68 +1,62 @@
-use crate::solver::strategies::Strategy;
-use crate::{Cell, CellValue, Grid, Position};
+use super::{AnyStrategy, Difficulty, UnitStrategy};
+use crate::{Cell, CellValue, Grid, Position, Unit};
 
 pub struct HiddenSingle;
 
-impl HiddenSingle {
-    fn is_hidden_single(grid: &Grid, p: &Position, v: &CellValue) -> bool {
-        let mut col_has_same = false;
-        for same_col in p.iter_col(false) {
-            if grid.get_cell(same_col).can_be(v) {
-                col_has_same = true;
-                break;
-            }
-        }
-        if !col_has_same {
-            return true;
-        }
-        let mut row_has_same = false;
-        for same_row in p.iter_row(false) {
-            if grid.get_cell(same_row).can_be(v) {
-                row_has_same = true;
-                break;
-            }
-        }
-        if !row_has_same {
-            return true;
-        }
-        let mut box_has_same = false;
-        for same_box in p.iter_box(false) {
-            if grid.get_cell(same_box).can_be(v) {
-                box_has_same = true;
-                break;
-            }
-        }
-        if !box_has_same {
-            return true;
-        }
-        false
+impl AnyStrategy for HiddenSingle {
+    fn name(&self) -> String {
+        "Hidden Single".to_string()
     }
 
-    fn solve_cell(grid: &Grid, p: Position) -> Cell {
-        let cell = grid.get_cell(p);
-        match cell {
-            Cell::Solved(_) => cell.clone(),
-            Cell::Unsolved(candidates) => {
-                for candidate_value in candidates.to_vec().into_iter() {
-                    if Self::is_hidden_single(grid, &p, &candidate_value) {
-                        return Cell::Solved(candidate_value);
-                    }
-                }
-                cell.clone()
-            }
-        }
+    fn difficulty(&self) -> Difficulty {
+        Difficulty::Standard
     }
 }
 
-impl Strategy for HiddenSingle {
-    fn solve(&self, grid: &Grid) -> Grid {
-        let mut new_grid = grid.clone();
-        for p in Position::iter_grid() {
-            new_grid.set_cell(p, Self::solve_cell(grid, p));
+impl UnitStrategy for HiddenSingle {
+    fn solve_unit(&self, _grid: &Grid, unit: &Unit) -> Unit {
+        let mut solved_unit = Unit::new();
+        let mut map = CandidateMap::new();
+        for (p, cell) in unit {
+            map.add_cell(p, cell);
         }
-        new_grid
+        for n in 1..=9 {
+            let positions = map.positions(n.into());
+            if positions.len() == 1 {
+                let p = positions[0];
+                solved_unit.insert(p, Cell::Solved(n.into()));
+            }
+        }
+        solved_unit
     }
-    fn name(&self) -> String {
-        "[Easy] Hidden Single".to_string()
+}
+
+struct CandidateMap([Vec<Position>; 9]);
+
+impl CandidateMap {
+    pub fn new() -> Self {
+        CandidateMap([
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+            vec![],
+        ])
+    }
+    pub fn add_cell(&mut self, pos: &Position, cell: &Cell) {
+        if let Cell::Unsolved(candidates) = cell {
+            for val in candidates.to_vec() {
+                let n: usize = val.into();
+                self.0[n - 1].push(pos.clone());
+            }
+        }
+    }
+    pub fn positions(&self, value: CellValue) -> &Vec<Position> {
+        let n: usize = value.into();
+        &self.0[n - 1]
     }
 }

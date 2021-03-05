@@ -1,31 +1,31 @@
-use crate::solver::strategies::Strategy;
+use super::{AnyStrategy, CellStrategy, Difficulty};
 use crate::{Cell, Grid, Position};
 
 pub struct PruneCandidates;
 
-impl Strategy for PruneCandidates {
-    fn solve(&self, grid: &Grid) -> Grid {
-        let mut new_grid = grid.clone();
-        for p in Position::iter_grid() {
-            new_grid.set_cell(
-                p,
-                match grid.get_cell(p) {
-                    Cell::Solved(n) => Cell::Solved(n.clone()),
-                    Cell::Unsolved(candidates) => {
-                        let mut pruned = candidates.clone();
-                        for seen in p.iter_seen(false) {
-                            if let Cell::Solved(v) = grid.get_cell(seen) {
-                                pruned.remove(v);
-                            }
-                        }
-                        Cell::Unsolved(pruned)
-                    }
-                },
-            )
-        }
-        new_grid
-    }
+impl AnyStrategy for PruneCandidates {
     fn name(&self) -> String {
-        "[Trivial] Prune Candidates".to_string()
+        "Prune Candidates".to_string()
+    }
+
+    fn difficulty(&self) -> Difficulty {
+        Difficulty::Trivial
+    }
+}
+
+impl CellStrategy for PruneCandidates {
+    fn solve_cell(&self, grid: &Grid, p: Position) -> Cell {
+        match grid.get_cell(p) {
+            Cell::Solved(n) => Cell::Solved(n),
+            Cell::Unsolved(candidates) => {
+                let mut pruned_candidates = candidates.clone();
+                for seen in p.seen_vec(false) {
+                    if let Cell::Solved(n) = grid.get_cell(seen) {
+                        pruned_candidates.remove(&n);
+                    }
+                }
+                Cell::Unsolved(pruned_candidates)
+            }
+        }
     }
 }

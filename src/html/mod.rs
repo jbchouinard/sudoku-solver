@@ -1,7 +1,12 @@
-use crate::{solver::Solver, Cell, Grid};
 use std::fs;
 use std::include_str;
+
+use lazy_static::lazy_static;
 use tera::{Context, Tera};
+
+use crate::solver::strategies::Strategy;
+use crate::solver::Solver;
+use crate::{Cell, Grid};
 
 lazy_static! {
     pub static ref TERA: Tera = {
@@ -39,7 +44,7 @@ impl<'a> GridRenderer<'a> {
 
     pub fn tera_context(&self) -> Context {
         let mut cells: Vec<String> = Vec::new();
-        for cell in self.grid.grid.iter() {
+        for cell in self.grid.cells.iter() {
             cells.push(CellRenderer::new(cell).render());
         }
         let mut context = Context::new();
@@ -70,8 +75,7 @@ impl<'a> CellRenderer<'a> {
                 TERA.render("number.html", &context).unwrap()
             }
             Cell::Unsolved(mcells) => {
-                let v: Vec<u8> = mcells.to_vec().into_iter().map(|v| v.into()).collect();
-                context.insert("mcells", &v);
+                context.insert("mcells", &mcells.0);
                 TERA.render("mark.html", &context).unwrap()
             }
         }
@@ -95,6 +99,19 @@ impl SolverRenderer {
             name = format!("step{}", n);
         }
         format!("{}.html", name)
+    }
+
+    fn strategy_string(strat: Option<&Strategy>) -> String {
+        match strat {
+            Some(strategy) => {
+                format!(
+                    "[{}] {}",
+                    strategy.difficulty().to_string(),
+                    strategy.name().to_string()
+                )
+            }
+            None => "Start".to_string(),
+        }
     }
 
     fn render_step(
@@ -122,10 +139,14 @@ impl SolverRenderer {
         TERA.render("sudoku_step.html", &context).unwrap()
     }
 
-    pub fn solve_and_render(&self, sudoku: &Grid, output_dir: &str) -> Result<(), std::io::Error> {
+    pub fn solve_and_render(
+        &self,
+        sudoku: &Grid,
+        output_dir: &str,
+    ) -> Result<Grid, std::io::Error> {
         let mut step = 0;
         let mut current_strat;
-        let mut next_strat = "Start".to_string();
+        let mut next_strat = None;
         let mut prev_grid;
         let mut current_grid = None;
         let mut next_grid = Some(sudoku.clone());
@@ -140,9 +161,9 @@ impl SolverRenderer {
             step = step + 1;
 
             match self.solver.solve_step(&current_grid.unwrap()) {
-                Some((strategy, solution)) => {
+                Some((strategy, solution, _)) => {
                     next_grid = Some(solution.clone());
-                    next_strat = strategy.name();
+                    next_strat = Some(strategy);
                 }
                 None => {
                     next_grid = None;
@@ -153,12 +174,12 @@ impl SolverRenderer {
                 self.render_step(
                     &current_grid.unwrap(),
                     step,
-                    &current_strat,
+                    &Self::strategy_string(current_strat),
                     prev_grid.is_some(),
                     next_grid.is_some(),
                 ),
             )?;
         }
-        Ok(())
+        Ok(current_grid.unwrap())
     }
 }

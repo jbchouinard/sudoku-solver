@@ -1,8 +1,11 @@
 [package]
 name = "sudokusolver"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Jerome Boisvert-Chouinard <me@jbchouinard.net>"]
 edition = "2018"
+
+[features]
+html = ["tera"]
 
 [lib]
 name = "sudoku"
@@ -14,6 +17,8 @@ path = "src/main.rs"
 
 [dependencies]
 lazy_static = "1"
-quicli = "0.4"
 structopt = "0.3"
-tera = {version="1", default-features=false}
+tera = {version="1", default-features=false, optional=true}
+
+[dev-dependencies]
+test-case = "1.1.0"
