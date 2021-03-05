@@ -1,7 +1,7 @@
 use quicli::prelude::*;
 use structopt::StructOpt;
 use sudoku::html::SolverRenderer;
-use sudoku::solve::{strategies::all_strategies, Solver};
+use sudoku::solver::{strategies::all_strategies, Solver};
 use sudoku::Grid;
 
 #[derive(Debug, StructOpt)]

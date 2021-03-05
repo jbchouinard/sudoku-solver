@@ -1,4 +1,4 @@
-use crate::{solve::Solver, Cell, Grid};
+use crate::{solver::Solver, Cell, Grid};
 use std::fs;
 use std::include_str;
 use tera::{Context, Tera};
@@ -130,7 +130,7 @@ impl SolverRenderer {
         let mut current_grid = None;
         let mut next_grid = Some(sudoku.clone());
         loop {
-            if let None = next_grid {
+            if next_grid.is_none() {
                 break;
             }
 

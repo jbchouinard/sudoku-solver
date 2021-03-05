@@ -1,4 +1,4 @@
-use crate::solve::strategies::Strategy;
+use crate::solver::strategies::Strategy;
 use crate::{Cell, Grid, Position};
 
 pub struct PruneCandidates;

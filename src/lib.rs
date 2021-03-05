@@ -6,7 +6,7 @@ use std::fmt;
 use std::vec::IntoIter;
 
 pub mod html;
-pub mod solve;
+pub mod solver;
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub struct CellValue {
@@ -93,7 +93,7 @@ impl Cell {
                 return Cell::Solved(candidates[0]);
             }
         }
-        self.clone()
+        self
     }
 
     pub fn to_string(&self) -> String {

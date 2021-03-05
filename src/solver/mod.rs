@@ -1,5 +1,7 @@
-use crate::solve::strategies::Strategy;
+use crate::solver::strategies::Strategy;
 use crate::Grid;
+
+pub mod strategies;
 
 pub struct Solver {
     strategies: Vec<Box<dyn Strategy>>,
