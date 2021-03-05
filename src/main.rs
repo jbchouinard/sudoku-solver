@@ -6,15 +6,25 @@ use sudoku::Grid;
 
 #[derive(Debug, StructOpt)]
 struct Cli {
-    #[structopt(long = "outdir", short = "o", default_value = "html")]
-    outdir: String,
+    #[structopt(long = "output-html", short = "o")]
+    html_output_dir: Option<String>,
     puzzle: String,
 }
 
 fn main() -> CliResult {
     let args = Cli::from_args();
     let sudoku = Grid::from_string(&args.puzzle)?;
-    let solver = SolverRenderer::new(Solver::new(all_strategies()));
-    solver.solve_and_render(&sudoku, &args.outdir)?;
+    let solver = Solver::new(all_strategies());
+
+    match args.html_output_dir {
+        Some(dir) => {
+            let renderer = SolverRenderer::new(solver);
+            renderer.solve_and_render(&sudoku, &dir)?;
+        }
+        None => {
+            let solution = solver.solve(&sudoku);
+            println!("{}", solution.to_string());
+        }
+    }
     Ok(())
 }

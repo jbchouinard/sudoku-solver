@@ -66,6 +66,10 @@ impl Candidates {
     pub fn remove(&mut self, v: &CellValue) {
         self.possible[Self::index(v)] = false;
     }
+
+    pub fn can_be(&self, v: &CellValue) -> bool {
+        self.possible[Self::index(v)]
+    }
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
@@ -92,10 +96,27 @@ impl Cell {
         self.clone()
     }
 
+    pub fn to_string(&self) -> String {
+        match self {
+            Self::Solved(v) => {
+                let n: u8 = v.clone().into();
+                n.to_string()
+            }
+            Self::Unsolved(_) => "0".to_string(),
+        }
+    }
+
     pub fn candidates(&self) -> Option<Vec<CellValue>> {
         match self {
             Self::Solved(_) => None,
             Self::Unsolved(candidates) => Some(candidates.to_vec()),
+        }
+    }
+
+    pub fn can_be(&self, v: &CellValue) -> bool {
+        match self {
+            Self::Solved(ov) => v == ov,
+            Self::Unsolved(c) => c.can_be(v),
         }
     }
 }
@@ -141,37 +162,43 @@ impl Position {
         v.into_iter()
     }
 
-    pub fn iter_row(&self) -> IntoIter<Self> {
+    pub fn iter_row(&self, include_self: bool) -> IntoIter<Self> {
         let mut v = vec![];
         for col in 1..=9 {
-            v.push(Position::new(col, self.row));
-        }
-        v.into_iter()
-    }
-
-    pub fn iter_col(&self) -> IntoIter<Self> {
-        let mut v = vec![];
-        for row in 1..=9 {
-            v.push(Position::new(self.col, row));
-        }
-        v.into_iter()
-    }
-
-    pub fn iter_box(&self) -> IntoIter<Self> {
-        let mut v = vec![];
-        for col in Self::box_range(self.col) {
-            for row in Self::box_range(self.row) {
-                v.push(Position::new(col, row))
+            if include_self || col != self.col {
+                v.push(Position::new(col, self.row));
             }
         }
         v.into_iter()
     }
 
-    pub fn iter_seen(&self) -> IntoIter<Self> {
+    pub fn iter_col(&self, include_self: bool) -> IntoIter<Self> {
+        let mut v = vec![];
+        for row in 1..=9 {
+            if include_self || row != self.row {
+                v.push(Position::new(self.col, row));
+            }
+        }
+        v.into_iter()
+    }
+
+    pub fn iter_box(&self, include_self: bool) -> IntoIter<Self> {
+        let mut v = vec![];
+        for col in Self::box_range(self.col) {
+            for row in Self::box_range(self.row) {
+                if include_self || row != self.row || col != self.col {
+                    v.push(Position::new(col, row))
+                }
+            }
+        }
+        v.into_iter()
+    }
+
+    pub fn iter_seen(&self, include_self: bool) -> IntoIter<Self> {
         // TODO: don't iterate over same cells more than once
-        self.iter_row()
-            .chain(self.iter_col())
-            .chain(self.iter_box())
+        self.iter_row(include_self)
+            .chain(self.iter_col(include_self))
+            .chain(self.iter_box(include_self))
             .collect::<Vec<Self>>()
             .into_iter()
     }
@@ -205,6 +232,14 @@ impl Grid {
             let char_arr: [char; 81] = (char_vec[0..81]).try_into().unwrap();
             Ok(Grid::from_chars(&char_arr))
         }
+    }
+
+    pub fn to_string(&self) -> String {
+        let mut parts = vec![];
+        for v in self.grid.iter() {
+            parts.push(v.to_string());
+        }
+        parts.join("")
     }
 
     pub fn from_chars(cell_values: &[char; 81]) -> Grid {
