@@ -1,3 +1,5 @@
+[![Rust](https://github.com/jbchouinard/sudokusolver/actions/workflows/rust.yml/badge.svg?branch=master)](https://github.com/jbchouinard/sudokusolver/actions/workflows/rust.yml)
+
 # SudokuSolver
 
 A sudoku solver written in Rust. It can output solution steps as plain HTML.
