@@ -23,7 +23,7 @@ PUZZLE is the sudoku to be solved as a string of 81 digits, where unsolved cells
 
 HTML output:
 
-```bash```
+```bash
 mkdir html
 sudokusolver -o html PUZZLE
 ```
