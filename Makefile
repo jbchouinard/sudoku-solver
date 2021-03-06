@@ -1,19 +1,15 @@
-all: dist/sudokusolver-linux-amd64.tar.gz
+TARGET ?= x86_64-unknown-linux-musl
+TARGET_DIR = target/${TARGET}/release
 
-target/release/sudokusolver target/release/sudokusolver-benchmark:
-	cargo build --release --features html
+all: ${TARGET_DIR}/sudokusolver-${TARGET}.tar.gz
 
-dist/sudokusolver: target/release/sudokusolver
-dist/sudokusolver-benchmark: target/release/sudokusolver-benchmark
-dist/sudokusolver dist/sudokusolver-benchmark:
-	mkdir -p dist
-	cp $< $@
+${TARGET_DIR}/sudokusolver ${TARGET_DIR}/sudokusolver-benchmark:
+	cargo build --release --target ${TARGET} --features html
 
-dist/sudokusolver-linux-amd64.tar.gz: dist/sudokusolver dist/sudokusolver-benchmark
-	cd dist && tar -cvzf sudokusolver-linux-amd64.tar.gz sudokusolver sudokusolver-benchmark
+${TARGET_DIR}/sudokusolver-${TARGET}.tar.gz: ${TARGET_DIR}/sudokusolver ${TARGET_DIR}/sudokusolver-benchmark
+	cd ${TARGET_DIR} && tar -cvzf sudokusolver-${TARGET}.tar.gz sudokusolver sudokusolver-benchmark
 
 clean:
 	cargo clean
-	rm -rf dist
 
 .PHONY: all clean
