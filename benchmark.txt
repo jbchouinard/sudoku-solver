@@ -1,0 +1,43 @@
+EASY PUZZLES...
+Solved 58672 of 58672 puzzles (100%)
+All puzzles
+Hardest rating: 1.2
+Average steps: 13.4
+Average time: 222 μs
+Solved puzzles
+Hardest rating: 1.2
+Average steps: 13.4
+Average time: 222 μs
+
+MEDIUM PUZZLES...
+Solved 147497 of 150708 puzzles (97%)
+All puzzles
+Hardest rating: 2.3
+Average steps: 19.5
+Average time: 488 μs
+Solved puzzles
+Hardest rating: 2.3
+Average steps: 19.7
+Average time: 487 μs
+
+HARD PUZZLES...
+Solved 28383 of 95906 puzzles (29%)
+All puzzles
+Hardest rating: 4.8
+Average steps: 17.4
+Average time: 653 μs
+Solved puzzles
+Hardest rating: 3.6
+Average steps: 26.5
+Average time: 864 μs
+
+DIABOLICAL PUZZLES...
+Solved 0 of 39719 puzzles (0%)
+All puzzles
+Hardest rating: 9.3
+Average steps: 11.5
+Average time: 512 μs
+Solved puzzles
+Hardest rating: 0.0
+Average steps: NaN
+Average time: NaN μs
