@@ -15,6 +15,10 @@ path = "src/lib.rs"
 name = "sudokusolver"
 path = "src/main.rs"
 
+[[bin]]
+name = "sudokusolver-benchmark"
+path = "src/benchmark.rs"
+
 [dependencies]
 lazy_static = "1"
 structopt = "0.3"
