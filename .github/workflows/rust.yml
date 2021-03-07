@@ -14,17 +14,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Build
-      run: cargo build --release --verbose
-  test:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Run unit tests
-      run: cargo build --release --verbose
+    - name: Build and Test x86_64-unknown-linux-musl
+      run: |
+        rustup target add x86_64-unknown-linux-musl
+        cargo test --target x86_64-unknown-linux-musl --release --features html
+        cargo build --target x86_64-unknown-linux-musl --release --features html
+    - uses: actions/upload-artifact@v2
+      with:
+        name: sudokusolver-x86_64-unknown-linux-musl
+        path: |
+          target/x86_64-unknown-linux-musl/release/sudokusolver
+          target/x86_64-unknown-linux-musl/release/sudokusolver-benchmark
   benchmark:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
     - name: Run benchmark
-      run: cargo run --release --bin sudokusolver-benchmark
+      run: cargo run --release --bin sudokusolver-benchmark | tee benchmark.txt
+    - uses: actions/upload-artifact@v2
+      with:
+        name: benchmark
+        path: benchmark.txt
