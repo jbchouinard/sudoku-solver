@@ -10,7 +10,22 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build and Test x86_64-pc-windows-gnu
+        run: |
+          rustup target add x86_64-pc-windows-gnu
+          cargo test --target x86_64-pc-windows-gnu --release --features html
+          cargo build --target x86_64-pc-windows-gnu --release --features html
+      - uses: actions/upload-artifact@v2
+        with:
+          name: sudokusolver-x86_64-pc-windows-gnu
+          path: |
+            target/x86_64-pc-windows-gnu/release/sudokusolver
+            target/x86_64-pc-windows-gnu/release/sudokusolver-benchmark
+  build-linux:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
