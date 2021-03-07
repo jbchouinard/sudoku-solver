@@ -23,8 +23,8 @@ jobs:
         with:
           name: sudokusolver-x86_64-pc-windows-gnu
           path: |
-            target/x86_64-pc-windows-gnu/release/sudokusolver
-            target/x86_64-pc-windows-gnu/release/sudokusolver-benchmark
+            target\x86_64-pc-windows-gnu\release\sudokusolver.exe
+            target\x86_64-pc-windows-gnu\release\sudokusolver-benchmark.exe
   build-linux:
     runs-on: ubuntu-latest
     steps:
