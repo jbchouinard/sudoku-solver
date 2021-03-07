@@ -13,13 +13,19 @@ jobs:
   build-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Set git to use LF
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+      - name: Git checkout
+        uses: actions/checkout@v2
       - name: Build and Test x86_64-pc-windows-gnu
         run: |
           rustup target add x86_64-pc-windows-gnu
           cargo test --target x86_64-pc-windows-gnu --release --features html
           cargo build --target x86_64-pc-windows-gnu --release --features html
-      - uses: actions/upload-artifact@v2
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
         with:
           name: sudokusolver-x86_64-pc-windows-gnu
           path: |
@@ -28,13 +34,15 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Build and Test x86_64-unknown-linux-musl
+    - name: Git checkout
+      uses: actions/checkout@v2
+    - name: Build and test x86_64-unknown-linux-musl
       run: |
         rustup target add x86_64-unknown-linux-musl
         cargo test --target x86_64-unknown-linux-musl --release --features html
         cargo build --target x86_64-unknown-linux-musl --release --features html
-    - uses: actions/upload-artifact@v2
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v2
       with:
         name: sudokusolver-x86_64-unknown-linux-musl
         path: |
@@ -43,10 +51,12 @@ jobs:
   benchmark:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - name: Git checkout
+      uses: actions/checkout@v2
     - name: Run benchmark
       run: cargo run --release --bin sudokusolver-benchmark | tee benchmark.txt
-    - uses: actions/upload-artifact@v2
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v2
       with:
         name: benchmark
         path: benchmark.txt
