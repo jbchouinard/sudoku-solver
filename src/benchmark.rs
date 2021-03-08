@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use sudoku::solver::strategies::all_strategies;
-use sudoku::solver::{Solution, Solver};
+use sudoku::solver::{SolutionStep, Solver};
 use sudoku::{Error, Grid, Result};
 
 const EASY_PUZZLES_STR: &str = include_str!("../puzzles/easy.txt");
@@ -89,23 +89,23 @@ impl Benchmark {
             avg_time_solved: RunningAverage::new(),
         }
     }
-    fn total_time(sol: &Solution) -> f64 {
+    fn total_time(steps: &[SolutionStep]) -> f64 {
         let mut total: f64 = 0.0;
-        for step in &sol.steps {
+        for step in steps {
             total += step.time.as_micros() as f64;
         }
         total
     }
-    fn add(&mut self, puz: &Puzzle, sol: &Solution) {
+    fn add(&mut self, puz: &Puzzle, steps: &[SolutionStep]) {
         self.total += 1;
         self.hardest_rating = self.hardest_rating.max(puz.rating);
-        self.avg_steps.update(sol.steps.len() as f64);
-        self.avg_time.update(Self::total_time(sol));
-        if sol.grid.is_solved() {
+        self.avg_steps.update(steps.len() as f64);
+        self.avg_time.update(Self::total_time(steps));
+        if puz.grid.is_solved() {
             self.solved += 1;
             self.hardest_rating_solved = self.hardest_rating_solved.max(puz.rating);
-            self.avg_steps_solved.update(sol.steps.len() as f64);
-            self.avg_time_solved.update(Self::total_time(sol));
+            self.avg_steps_solved.update(steps.len() as f64);
+            self.avg_time_solved.update(Self::total_time(steps));
         }
     }
     fn print_summary(&self) {
@@ -115,11 +115,11 @@ impl Benchmark {
             self.total,
             100 * self.solved / self.total
         );
-        println!("All puzzles");
+        println!("All puzzles--------------");
         println!("Hardest rating: {:.1}", self.hardest_rating);
         println!("Average steps: {:.1}", self.avg_steps.average());
         println!("Average time: {:.0} μs", self.avg_time.average());
-        println!("Solved puzzles");
+        println!("Solved puzzles-----------");
         println!("Hardest rating: {:.1}", self.hardest_rating_solved);
         println!("Average steps: {:.1}", self.avg_steps_solved.average());
         println!("Average time: {:.0} μs", self.avg_time_solved.average());
@@ -130,8 +130,8 @@ fn run_benchmark(puzzles_str: &str) -> Benchmark {
     let solver = Solver::new(all_strategies());
     let puzzles = parse_puzzles(puzzles_str).unwrap();
     let mut benchmark = Benchmark::new();
-    for (_, puz) in puzzles {
-        let sol = solver.solve(&puz.grid);
+    for (_, mut puz) in puzzles {
+        let sol = solver.solve(&mut puz.grid);
         benchmark.add(&puz, &sol);
     }
     benchmark

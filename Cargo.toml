@@ -22,6 +22,7 @@ name = "sudokusolver-benchmark"
 path = "src/benchmark.rs"
 
 [dependencies]
+dyn-clone = "1"
 lazy_static = "1"
 structopt = "0.3"
 tera = {version="1", default-features=false, optional=true}

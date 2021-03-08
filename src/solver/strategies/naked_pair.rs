@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 use std::convert::TryInto;
 
-use super::{AnyStrategy, Difficulty, UnitStrategy};
+use super::{Difficulty, StrategyDelta, UnitStrategy};
 use crate::{Cell, CellValue, Grid, Position, Unit};
 
+#[derive(Clone)]
 pub struct NakedPair;
 
-impl AnyStrategy for NakedPair {
+impl UnitStrategy for NakedPair {
     fn name(&self) -> String {
         "Naked Pair".to_string()
     }
@@ -14,11 +15,9 @@ impl AnyStrategy for NakedPair {
     fn difficulty(&self) -> Difficulty {
         Difficulty::Standard
     }
-}
 
-impl UnitStrategy for NakedPair {
-    fn solve_unit(&self, _grid: &Grid, unit: &Unit) -> Unit {
-        let mut solved_unit = Unit::new();
+    fn solve_unit(&self, _grid: &Grid, unit: &Unit) -> StrategyDelta {
+        let mut delta = StrategyDelta::new();
         let mut pairmap = CandidatePairMap::new();
         for (p, cell) in unit {
             pairmap.add_cell(p, cell);
@@ -30,16 +29,18 @@ impl UnitStrategy for NakedPair {
                 for (other_p, other) in unit {
                     if other_p != &pair_p[0] && other_p != &pair_p[1] {
                         if let Cell::Unsolved(candidates) = other {
-                            let mut pruned_candidates = *candidates;
-                            pruned_candidates.remove(&pair[0]);
-                            pruned_candidates.remove(&pair[1]);
-                            solved_unit.insert(*other_p, Cell::Unsolved(pruned_candidates));
+                            if candidates.can_be(&pair[0]) {
+                                delta.eliminate(*other_p, pair[0]);
+                            }
+                            if candidates.can_be(&pair[1]) {
+                                delta.eliminate(*other_p, pair[1]);
+                            }
                         }
                     }
                 }
             }
         }
-        solved_unit
+        delta
     }
 }
 

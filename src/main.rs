@@ -18,29 +18,26 @@ struct Cli {
 }
 
 fn solve_and_print(puzzle: &str) {
-    let sudoku = Grid::from_str(puzzle).unwrap();
+    let mut sudoku = Grid::from_str(puzzle).unwrap();
     let solver = Solver::new(all_strategies());
     let start = Instant::now();
-    let solution = solver.solve(&sudoku);
-    let solved_grid;
-    for (step, solution_step) in solution.steps.iter().enumerate() {
+    let steps = solver.solve(&mut sudoku);
+    for (i, step) in steps.iter().enumerate() {
         eprintln!(
-            "{} {}: solved {} cells, eliminated {} candidates ({} μs)",
-            step,
-            &solution_step.strategy.name(),
-            solution_step.solved_diff.cells_solved,
-            solution_step.solved_diff.candidates_eliminated,
-            solution_step.time.as_micros(),
+            "{} {}: {} ({} μs)",
+            i,
+            &step.strategy.name(),
+            step.delta,
+            step.time.as_micros(),
         );
     }
     eprintln!("Total time: {} ms", start.elapsed().as_millis());
-    solved_grid = solution.grid;
-    if solved_grid.is_solved() {
+    if sudoku.is_solved() {
         eprintln!("Solved!");
     } else {
         eprintln!("Uh-oh, we couldn't solve that one.");
     }
-    println!("{}", solved_grid.to_string());
+    println!("{}", sudoku.to_string());
 }
 
 #[cfg(feature = "html")]
@@ -48,7 +45,7 @@ fn solve_and_render_html(puzzle: &str, out_dir: &str) {
     let sudoku = Grid::from_str(puzzle).unwrap();
     let solver = Solver::new(all_strategies());
     let renderer = SolverRenderer::new(solver);
-    let solved_grid = renderer.solve_and_render(&sudoku, out_dir).unwrap();
+    let solved_grid = renderer.solve_and_render(sudoku, out_dir).unwrap();
     println!("{}", solved_grid.to_string());
 }
 

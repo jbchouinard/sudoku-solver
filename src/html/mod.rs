@@ -101,14 +101,10 @@ impl SolverRenderer {
         format!("{}.html", name)
     }
 
-    fn strategy_string(strat: Option<&Strategy>) -> String {
+    fn strategy_string(strat: Option<Box<dyn Strategy>>) -> String {
         match strat {
             Some(strategy) => {
-                format!(
-                    "[{}] {}",
-                    strategy.difficulty(),
-                    strategy.name()
-                )
+                format!("[{}] {}", strategy.difficulty(), strategy.name())
             }
             None => "Start".to_string(),
         }
@@ -139,17 +135,13 @@ impl SolverRenderer {
         TERA.render("sudoku_step.html", &context).unwrap()
     }
 
-    pub fn solve_and_render(
-        &self,
-        sudoku: &Grid,
-        output_dir: &str,
-    ) -> Result<Grid, std::io::Error> {
+    pub fn solve_and_render(&self, grid: Grid, output_dir: &str) -> Result<Grid, std::io::Error> {
         let mut step = 0;
         let mut current_strat;
         let mut next_strat = None;
         let mut prev_grid;
         let mut current_grid = None;
-        let mut next_grid = Some(*sudoku);
+        let mut next_grid = Some(grid);
         loop {
             if next_grid.is_none() {
                 break;
@@ -157,16 +149,16 @@ impl SolverRenderer {
 
             prev_grid = current_grid;
             current_grid = next_grid;
-            current_strat = next_strat;
+            current_strat = next_strat.clone();
             step += 1;
 
-            match self.solver.solve_step(&current_grid.unwrap()) {
-                Some((strategy, solution, _)) => {
-                    next_grid = Some(solution);
-                    next_strat = Some(strategy);
+            match self.solver.solve_step(&next_grid.unwrap()) {
+                Some(step) => {
+                    next_strat = Some(step.strategy);
                 }
                 None => {
                     next_grid = None;
+                    next_strat = None;
                 }
             }
             fs::write(

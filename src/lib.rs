@@ -27,15 +27,15 @@ impl From<u8> for CellValue {
     }
 }
 
-impl Into<u8> for CellValue {
-    fn into(self) -> u8 {
-        self.0
+impl From<CellValue> for u8 {
+    fn from(val: CellValue) -> u8 {
+        val.0
     }
 }
 
-impl Into<usize> for CellValue {
-    fn into(self) -> usize {
-        let n: u8 = self.into();
+impl From<CellValue> for usize {
+    fn from(val: CellValue) -> usize {
+        let n: u8 = val.into();
         n.into()
     }
 }
@@ -79,12 +79,12 @@ impl Candidates {
     }
 
     fn index(v: &CellValue) -> usize {
-        let n: u8 = v.clone().into();
+        let n: u8 = (*v).into();
         (n - 1).into()
     }
 
     pub fn add(&mut self, v: &CellValue) {
-        self.0[Self::index(v)] = false;
+        self.0[Self::index(v)] = true;
     }
 
     pub fn remove(&mut self, v: &CellValue) {
@@ -93,6 +93,17 @@ impl Candidates {
 
     pub fn can_be(&self, v: &CellValue) -> bool {
         self.0[Self::index(v)]
+    }
+}
+
+impl fmt::Display for Candidates {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::result::Result<(), fmt::Error> {
+        let mut parts = vec![];
+        for v in self.to_vec() {
+            let n: u8 = v.into();
+            parts.push(n.to_string());
+        }
+        write!(f, "[{}]", parts.join(","))
     }
 }
 
@@ -265,6 +276,12 @@ impl Position {
     }
 }
 
+impl fmt::Display for Position {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::result::Result<(), fmt::Error> {
+        write!(f, "R{}C{}", self.row, self.col)
+    }
+}
+
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct Grid {
     cells: [Cell; 81],
@@ -281,8 +298,15 @@ impl Grid {
         self.cells[pos.index()]
     }
 
-    pub fn set_cell(&mut self, pos: Position, cell: Cell) {
-        self.cells[pos.index()] = cell.to_solved();
+    pub fn set_cell(&mut self, pos: Position, cell: Cell) -> bool {
+        let new_cell = cell.to_solved();
+        let old_cell = self.get_cell(pos);
+        if new_cell == old_cell {
+            false
+        } else {
+            self.cells[pos.index()] = new_cell;
+            true
+        }
     }
 
     pub fn get_cells(&self, pos: Vec<Position>) -> Unit {
@@ -293,10 +317,14 @@ impl Grid {
         u
     }
 
-    pub fn set_cells(&mut self, unit: Unit) {
+    pub fn set_cells(&mut self, unit: Unit) -> u16 {
+        let mut changed_count = 0;
         for (p, cell) in unit.into_iter() {
-            self.set_cell(p, cell);
+            if self.set_cell(p, cell) {
+                changed_count += 1;
+            }
         }
+        changed_count
     }
 
     pub fn is_valid(&self) -> bool {
@@ -310,29 +338,6 @@ impl Grid {
             }
         }
         true
-    }
-
-    pub fn solved_diff_from(&self, solved: &Grid) -> GridSolvedDiff {
-        let mut cells_solved = 0;
-        let mut candidates_eliminated = 0;
-        for i in 0..81 {
-            let cell = self.cells[i];
-            let solcell = solved.cells[i];
-            if let Cell::Unsolved(candx) = cell {
-                match solcell {
-                    Cell::Solved(_) => {
-                        cells_solved += 1;
-                    }
-                    Cell::Unsolved(solved_candx) => {
-                        candidates_eliminated += candx.to_vec().len() - solved_candx.to_vec().len()
-                    }
-                }
-            }
-        }
-        GridSolvedDiff {
-            cells_solved,
-            candidates_eliminated: candidates_eliminated.try_into().unwrap(),
-        }
     }
 }
 
@@ -367,11 +372,6 @@ impl Default for Grid {
     fn default() -> Self {
         Self::new()
     }
-}
-
-pub struct GridSolvedDiff {
-    pub cells_solved: u16,
-    pub candidates_eliminated: u16,
 }
 
 type Unit = HashMap<Position, Cell>;

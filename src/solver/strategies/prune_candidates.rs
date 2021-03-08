@@ -1,9 +1,10 @@
-use super::{AnyStrategy, CellStrategy, Difficulty};
-use crate::{Cell, Grid, Position};
+use super::{Difficulty, StrategyDelta, UnitStrategy};
+use crate::{Candidates, Cell, Grid, Unit};
 
+#[derive(Clone)]
 pub struct PruneCandidates;
 
-impl AnyStrategy for PruneCandidates {
+impl UnitStrategy for PruneCandidates {
     fn name(&self) -> String {
         "Prune Candidates".to_string()
     }
@@ -11,21 +12,24 @@ impl AnyStrategy for PruneCandidates {
     fn difficulty(&self) -> Difficulty {
         Difficulty::Trivial
     }
-}
 
-impl CellStrategy for PruneCandidates {
-    fn solve_cell(&self, grid: &Grid, p: Position) -> Cell {
-        match grid.get_cell(p) {
-            Cell::Solved(n) => Cell::Solved(n),
-            Cell::Unsolved(candidates) => {
-                let mut pruned_candidates = candidates;
-                for seen in p.seen_vec(false) {
-                    if let Cell::Solved(n) = grid.get_cell(seen) {
-                        pruned_candidates.remove(&n);
-                    }
-                }
-                Cell::Unsolved(pruned_candidates)
+    fn solve_unit(&self, _grid: &Grid, unit: &Unit) -> StrategyDelta {
+        let mut delta = StrategyDelta::new();
+        let mut to_prune = Candidates::new([false; 9]);
+        for cell in unit.values() {
+            if let Cell::Solved(n) = cell {
+                to_prune.add(&n);
             }
         }
+        for (p, cell) in unit {
+            if let Cell::Unsolved(candidates) = cell {
+                for n in to_prune.to_vec() {
+                    if candidates.can_be(&n) {
+                        delta.eliminate(*p, n);
+                    }
+                }
+            }
+        }
+        delta
     }
 }

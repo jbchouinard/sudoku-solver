@@ -49,15 +49,3 @@ jobs:
         path: |
           target/${{ env.CARGO_BUILD_TARGET }}/release/sudokusolver
           target/${{ env.CARGO_BUILD_TARGET }}/release/sudokusolver-benchmark
-  benchmark:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Git checkout
-      uses: actions/checkout@v2
-    - name: Run benchmark
-      run: cargo run --release --bin sudokusolver-benchmark | tee benchmark.txt
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v2
-      with:
-        name: benchmark
-        path: benchmark.txt

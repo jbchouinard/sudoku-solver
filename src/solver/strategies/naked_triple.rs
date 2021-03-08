@@ -1,9 +1,10 @@
-use super::{AnyStrategy, Difficulty, UnitStrategy};
+use super::{Difficulty, StrategyDelta, UnitStrategy};
 use crate::{Cell, Grid, Unit};
 
+#[derive(Clone)]
 pub struct NakedTriple;
 
-impl AnyStrategy for NakedTriple {
+impl UnitStrategy for NakedTriple {
     fn name(&self) -> String {
         "Naked Triple".to_string()
     }
@@ -11,11 +12,9 @@ impl AnyStrategy for NakedTriple {
     fn difficulty(&self) -> Difficulty {
         Difficulty::Standard
     }
-}
 
-impl UnitStrategy for NakedTriple {
-    fn solve_unit(&self, _grid: &Grid, unit: &Unit) -> Unit {
-        let mut solved_unit = Unit::new();
+    fn solve_unit(&self, _grid: &Grid, unit: &Unit) -> StrategyDelta {
+        let mut delta = StrategyDelta::new();
         let mut unsolved = vec![];
         for (p, cell) in unit {
             if let Cell::Unsolved(candidates) = cell {
@@ -36,11 +35,11 @@ impl UnitStrategy for NakedTriple {
                             if c1_c2_c3.count() == 3 {
                                 for (pu, cu) in &unsolved {
                                     if pu != p1 && pu != p2 && pu != p3 {
-                                        let mut pruned_candidates = *(*cu);
                                         for cval in c1_c2_c3.to_vec() {
-                                            pruned_candidates.remove(&cval);
+                                            if cu.can_be(&cval) {
+                                                delta.eliminate(**pu, cval)
+                                            }
                                         }
-                                        solved_unit.insert(**pu, Cell::Unsolved(pruned_candidates));
                                     }
                                 }
                             }
@@ -49,6 +48,6 @@ impl UnitStrategy for NakedTriple {
                 }
             }
         }
-        solved_unit
+        delta
     }
 }

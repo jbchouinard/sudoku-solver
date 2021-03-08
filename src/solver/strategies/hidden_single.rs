@@ -1,9 +1,10 @@
-use super::{AnyStrategy, Difficulty, UnitStrategy};
+use super::{Difficulty, StrategyDelta, UnitStrategy};
 use crate::{Cell, CellValue, Grid, Position, Unit};
 
+#[derive(Clone)]
 pub struct HiddenSingle;
 
-impl AnyStrategy for HiddenSingle {
+impl UnitStrategy for HiddenSingle {
     fn name(&self) -> String {
         "Hidden Single".to_string()
     }
@@ -11,11 +12,9 @@ impl AnyStrategy for HiddenSingle {
     fn difficulty(&self) -> Difficulty {
         Difficulty::Standard
     }
-}
 
-impl UnitStrategy for HiddenSingle {
-    fn solve_unit(&self, _grid: &Grid, unit: &Unit) -> Unit {
-        let mut solved_unit = Unit::new();
+    fn solve_unit(&self, _grid: &Grid, unit: &Unit) -> StrategyDelta {
+        let mut delta = StrategyDelta::new();
         let mut map = CandidateMap::new();
         for (p, cell) in unit {
             map.add_cell(p, cell);
@@ -24,10 +23,10 @@ impl UnitStrategy for HiddenSingle {
             let positions = map.positions(n.into());
             if positions.len() == 1 {
                 let p = positions[0];
-                solved_unit.insert(p, Cell::Solved(n.into()));
+                delta.solve(p, n.into());
             }
         }
-        solved_unit
+        delta
     }
 }
 

@@ -31,8 +31,7 @@ use crate::{solver::strategies::all_strategies, solver::Solver, Grid};
 // )]
 fn solver_test(sudoku: &str, solution: &str) {
     let solver = Solver::new(all_strategies());
-    let sudoku = Grid::from_str(sudoku).unwrap();
-    let expected = Grid::from_str(solution).unwrap();
-    let actual = solver.solve(&sudoku);
-    assert_eq!(expected.to_string(), actual.grid.to_string());
+    let mut sudoku = Grid::from_str(sudoku).unwrap();
+    solver.solve(&mut sudoku);
+    assert_eq!(solution.to_string(), sudoku.to_string());
 }
