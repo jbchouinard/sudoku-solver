@@ -30,22 +30,15 @@ impl Solver {
     }
 
     pub fn solve(&self, sudoku: &Grid) -> Solution {
-        let mut current = sudoku.clone();
+        let mut current = *sudoku;
         let mut steps = vec![];
-        loop {
-            match self.solve_step(&current) {
-                Some((strategy, solved, duration)) => {
-                    steps.push(SolutionStep {
-                        strategy: strategy,
-                        solved_diff: current.solved_diff_from(&solved),
-                        time: duration,
-                    });
-                    current = solved;
-                }
-                None => {
-                    break;
-                }
-            }
+        while let Some((strategy, solved, duration)) = self.solve_step(&current) {
+            steps.push(SolutionStep {
+                strategy,
+                solved_diff: current.solved_diff_from(&solved),
+                time: duration,
+            });
+            current = solved;
         }
         Solution {
             grid: current,

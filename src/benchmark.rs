@@ -138,7 +138,7 @@ fn run_benchmark(puzzles_str: &str) -> Benchmark {
 }
 
 fn main() {
-    println!("\nEASY PUZZLES...");
+    println!("EASY PUZZLES...");
     run_benchmark(EASY_PUZZLES_STR).print_summary();
     println!("\nMEDIUM PUZZLES...");
     run_benchmark(MEDIUM_PUZZLES_STR).print_summary();

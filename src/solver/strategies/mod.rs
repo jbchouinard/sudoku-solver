@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::{Cell, Grid, Position, Unit};
 
 pub use hidden_single::HiddenSingle;
@@ -24,12 +26,13 @@ pub enum Difficulty {
     Standard = 1,
 }
 
-impl ToString for Difficulty {
-    fn to_string(&self) -> std::string::String {
-        match self {
+impl fmt::Display for Difficulty {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
             Self::Trivial => "Trivial".to_string(),
             Self::Standard => "Standard".to_string(),
-        }
+        };
+        write!(f, "{}", s)
     }
 }
 
@@ -76,7 +79,7 @@ impl Strategy {
     pub fn solve(&self, grid: &Grid) -> Grid {
         match self {
             Self::Cell(strategy) => {
-                let mut solved_grid = grid.clone();
+                let mut solved_grid = *grid;
                 for p in Position::grid_vec() {
                     let solved_cell = strategy.solve_cell(grid, p);
                     solved_grid.set_cell(p, solved_cell);
@@ -84,27 +87,9 @@ impl Strategy {
                 solved_grid
             }
             Self::Unit(strategy) => {
-                let mut solved_grid = grid.clone();
-                // Iterate each unit (row, col, box)
-                for r in 1..=9 {
-                    let pos = Position::new(1, r);
-                    let unit = grid.get_cells(pos.row_vec(true));
-                    let solved_unit = strategy.solve_unit(grid, &unit);
-                    solved_grid.set_cells(solved_unit);
-                }
-                for c in 1..=9 {
-                    let pos = Position::new(c, 1);
-                    let unit = grid.get_cells(pos.col_vec(true));
-                    let solved_unit = strategy.solve_unit(grid, &unit);
-                    solved_grid.set_cells(solved_unit);
-                }
-                for r in (1..=9).step_by(3) {
-                    for c in (1..=9).step_by(3) {
-                        let pos = Position::new(c, r);
-                        let unit = grid.get_cells(pos.box_vec(true));
-                        let solved_unit = strategy.solve_unit(grid, &unit);
-                        solved_grid.set_cells(solved_unit);
-                    }
+                let mut solved_grid = *grid;
+                for unit_vec in Position::unit_vecs() {
+                    solved_grid.set_cells(strategy.solve_unit(grid, &grid.get_cells(unit_vec)));
                 }
                 solved_grid
             }

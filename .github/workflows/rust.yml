@@ -8,46 +8,47 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  CARGO_TERM_VERBOSE: true
 
 jobs:
   build-windows:
     runs-on: windows-latest
+    env:
+      CARGO_BUILD_TARGET: x86_64-pc-windows-gnu
     steps:
-      - name: Set git to use LF
-        run: |
-          git config --global core.autocrlf false
-          git config --global core.eol lf
       - name: Git checkout
         uses: actions/checkout@v2
-      - name: Build and Test x86_64-pc-windows-gnu
+      - name: Build and Test ${{ env.CARGO_BUILD_TARGET }}
         run: |
-          rustup target add x86_64-pc-windows-gnu
-          cargo test --target x86_64-pc-windows-gnu --release --features html
-          cargo build --target x86_64-pc-windows-gnu --release --features html
+          rustup target add $env:CARGO_BUILD_TARGET
+          cargo test --release
+          cargo build --release
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: sudokusolver-x86_64-pc-windows-gnu
+          name: sudokusolver-${{ env.CARGO_BUILD_TARGET }}
           path: |
-            target\x86_64-pc-windows-gnu\release\sudokusolver.exe
-            target\x86_64-pc-windows-gnu\release\sudokusolver-benchmark.exe
+            target\${{ env.CARGO_BUILD_TARGET }}\release\sudokusolver.exe
+            target\${{ env.CARGO_BUILD_TARGET }}\release\sudokusolver-benchmark.exe
   build-linux:
     runs-on: ubuntu-latest
+    env:
+      CARGO_BUILD_TARGET: x86_64-unknown-linux-musl
     steps:
     - name: Git checkout
       uses: actions/checkout@v2
-    - name: Build and test x86_64-unknown-linux-musl
+    - name: Build and test ${{ env.CARGO_BUILD_TARGET }}
       run: |
-        rustup target add x86_64-unknown-linux-musl
-        cargo test --target x86_64-unknown-linux-musl --release --features html
-        cargo build --target x86_64-unknown-linux-musl --release --features html
+        rustup target add $CARGO_BUILD_TARGET
+        cargo test --release
+        cargo build --release
     - name: Upload artifacts
       uses: actions/upload-artifact@v2
       with:
-        name: sudokusolver-x86_64-unknown-linux-musl
+        name: sudokusolver-${{ env.CARGO_BUILD_TARGET }}
         path: |
-          target/x86_64-unknown-linux-musl/release/sudokusolver
-          target/x86_64-unknown-linux-musl/release/sudokusolver-benchmark
+          target/${{ env.CARGO_BUILD_TARGET }}/release/sudokusolver
+          target/${{ env.CARGO_BUILD_TARGET }}/release/sudokusolver-benchmark
   benchmark:
     runs-on: ubuntu-latest
     steps:

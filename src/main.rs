@@ -22,9 +22,8 @@ fn solve_and_print(puzzle: &str) {
     let solver = Solver::new(all_strategies());
     let start = Instant::now();
     let solution = solver.solve(&sudoku);
-    let mut step = 0;
     let solved_grid;
-    for solution_step in solution.steps {
+    for (step, solution_step) in solution.steps.iter().enumerate() {
         eprintln!(
             "{} {}: solved {} cells, eliminated {} candidates ({} μs)",
             step,
@@ -33,7 +32,6 @@ fn solve_and_print(puzzle: &str) {
             solution_step.solved_diff.candidates_eliminated,
             solution_step.time.as_micros(),
         );
-        step += 1;
     }
     eprintln!("Total time: {} ms", start.elapsed().as_millis());
     solved_grid = solution.grid;

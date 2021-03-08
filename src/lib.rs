@@ -14,7 +14,7 @@ pub struct CellValue(u8);
 
 impl CellValue {
     pub fn new(val: u8) -> Self {
-        if (val < 1) || (val > 9) {
+        if !(1..=9).contains(&val) {
             panic!("invalid CellValue");
         }
         Self(val)
@@ -50,8 +50,8 @@ impl Candidates {
 
     pub fn to_vec(&self) -> Vec<CellValue> {
         let mut v = vec![];
-        for i in 0..9 {
-            if self.0[i] {
+        for (i, b) in self.0.iter().enumerate() {
+            if *b {
                 v.push(CellValue::new((i + 1).try_into().unwrap()));
             }
         }
@@ -60,9 +60,9 @@ impl Candidates {
 
     pub fn count(&self) -> u8 {
         let mut c: u8 = 0;
-        for i in 0..9 {
-            if self.0[i] {
-                c = c + 1;
+        for b in self.0.iter() {
+            if *b {
+                c += 1;
             }
         }
         c
@@ -70,9 +70,9 @@ impl Candidates {
 
     pub fn combine(&self, other: &Candidates) -> Candidates {
         let mut possible = [false; 9];
-        for i in 0..9 {
+        for (i, p) in possible.iter_mut().enumerate() {
             if self.0[i] || other.0[i] {
-                possible[i] = true;
+                *p = true;
             }
         }
         Candidates(possible)
@@ -104,7 +104,7 @@ pub enum Cell {
 
 impl Cell {
     pub fn from_u8(val: u8) -> Cell {
-        if (val >= 1) && (val <= 9) {
+        if (1..=9).contains(&val) {
             Self::Solved(val.into())
         } else {
             Self::Unsolved(Candidates::new([true; 9]))
@@ -135,15 +135,13 @@ impl Cell {
     }
 }
 
-impl ToString for Cell {
-    fn to_string(&self) -> std::string::String {
-        match self {
-            Self::Solved(v) => {
-                let n: u8 = v.clone().into();
-                n.to_string()
-            }
-            Self::Unsolved(_) => "0".to_string(),
-        }
+impl fmt::Display for Cell {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let n: u8 = match self {
+            Self::Solved(v) => (*v).into(),
+            Self::Unsolved(_) => 0,
+        };
+        write!(f, "{}", n)
     }
 }
 
@@ -163,7 +161,7 @@ pub struct Position {
 
 impl Position {
     pub fn new(col: u8, row: u8) -> Position {
-        if (col < 1) || (col > 9) || (row < 1) || (row > 9) {
+        if !(1..=9).contains(&col) || (row < 1) || (row > 9) {
             panic!("out of bounds");
         }
         Self { col, row }
@@ -186,6 +184,7 @@ impl Position {
         low..low + 3
     }
 
+    /// All positions in a grid
     pub fn grid_vec() -> Vec<Self> {
         let mut v = vec![];
         for col in 1..=9 {
@@ -196,6 +195,7 @@ impl Position {
         v
     }
 
+    /// Positions for the row containing this position
     pub fn row_vec(&self, include_self: bool) -> Vec<Self> {
         let mut v = vec![];
         for col in 1..=9 {
@@ -206,6 +206,7 @@ impl Position {
         v
     }
 
+    /// Positions for the column containing this position
     pub fn col_vec(&self, include_self: bool) -> Vec<Self> {
         let mut v = vec![];
         for row in 1..=9 {
@@ -216,6 +217,7 @@ impl Position {
         v
     }
 
+    /// Positions for the box containing this position
     pub fn box_vec(&self, include_self: bool) -> Vec<Self> {
         let mut v = vec![];
         for col in Self::box_range(self.col) {
@@ -228,6 +230,25 @@ impl Position {
         v
     }
 
+    /// Positions for all units (row, column, box) in a grid
+    pub fn unit_vecs() -> Vec<Vec<Self>> {
+        let mut units = vec![];
+        // Iterate each unit (row, col, box)
+        for r in 1..=9 {
+            units.push(Position::new(1, r).row_vec(true));
+        }
+        for c in 1..=9 {
+            units.push(Position::new(c, 1).col_vec(true));
+        }
+        for r in (1..=9).step_by(3) {
+            for c in (1..=9).step_by(3) {
+                units.push(Position::new(c, r).box_vec(true));
+            }
+        }
+        units
+    }
+
+    /// Positions "seen" by this posititon (in the same row, column or box)
     pub fn seen_vec(&self, include_self: bool) -> Vec<Self> {
         let mut v = self.box_vec(include_self);
         for p in self.col_vec(include_self).into_iter() {
@@ -276,6 +297,10 @@ impl Grid {
         for (p, cell) in unit.into_iter() {
             self.set_cell(p, cell);
         }
+    }
+
+    pub fn is_valid(&self) -> bool {
+        true
     }
 
     pub fn is_solved(&self) -> bool {
@@ -328,13 +353,19 @@ impl FromStr for Grid {
     }
 }
 
-impl ToString for Grid {
-    fn to_string(&self) -> String {
+impl fmt::Display for Grid {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut parts = vec![];
         for v in self.cells.iter() {
             parts.push(v.to_string());
         }
-        parts.join("")
+        write!(f, "{}", parts.join(""))
+    }
+}
+
+impl Default for Grid {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

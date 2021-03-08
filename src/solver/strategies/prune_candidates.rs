@@ -18,7 +18,7 @@ impl CellStrategy for PruneCandidates {
         match grid.get_cell(p) {
             Cell::Solved(n) => Cell::Solved(n),
             Cell::Unsolved(candidates) => {
-                let mut pruned_candidates = candidates.clone();
+                let mut pruned_candidates = candidates;
                 for seen in p.seen_vec(false) {
                     if let Cell::Solved(n) = grid.get_cell(seen) {
                         pruned_candidates.remove(&n);

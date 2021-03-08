@@ -30,10 +30,10 @@ impl UnitStrategy for NakedPair {
                 for (other_p, other) in unit {
                     if other_p != &pair_p[0] && other_p != &pair_p[1] {
                         if let Cell::Unsolved(candidates) = other {
-                            let mut pruned_candidates = candidates.clone();
+                            let mut pruned_candidates = *candidates;
                             pruned_candidates.remove(&pair[0]);
                             pruned_candidates.remove(&pair[1]);
-                            solved_unit.insert(other_p.clone(), Cell::Unsolved(pruned_candidates));
+                            solved_unit.insert(*other_p, Cell::Unsolved(pruned_candidates));
                         }
                     }
                 }
@@ -61,10 +61,10 @@ impl CandidatePairMap {
                 let cd_arr: [CellValue; 2] = cd_vec.try_into().unwrap();
                 match self.map.get_mut(&cd_arr) {
                     Some(positions) => {
-                        positions.push(pos.clone());
+                        positions.push(*pos);
                     }
                     None => {
-                        self.map.insert(cd_arr, vec![pos.clone()]);
+                        self.map.insert(cd_arr, vec![*pos]);
                     }
                 }
             }

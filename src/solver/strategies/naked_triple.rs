@@ -36,7 +36,7 @@ impl UnitStrategy for NakedTriple {
                             if c1_c2_c3.count() == 3 {
                                 for (pu, cu) in &unsolved {
                                     if pu != p1 && pu != p2 && pu != p3 {
-                                        let mut pruned_candidates = (*cu).clone();
+                                        let mut pruned_candidates = *(*cu);
                                         for cval in c1_c2_c3.to_vec() {
                                             pruned_candidates.remove(&cval);
                                         }

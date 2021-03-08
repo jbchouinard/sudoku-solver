@@ -106,8 +106,8 @@ impl SolverRenderer {
             Some(strategy) => {
                 format!(
                     "[{}] {}",
-                    strategy.difficulty().to_string(),
-                    strategy.name().to_string()
+                    strategy.difficulty(),
+                    strategy.name()
                 )
             }
             None => "Start".to_string(),
@@ -149,7 +149,7 @@ impl SolverRenderer {
         let mut next_strat = None;
         let mut prev_grid;
         let mut current_grid = None;
-        let mut next_grid = Some(sudoku.clone());
+        let mut next_grid = Some(*sudoku);
         loop {
             if next_grid.is_none() {
                 break;
@@ -157,12 +157,12 @@ impl SolverRenderer {
 
             prev_grid = current_grid;
             current_grid = next_grid;
-            current_strat = next_strat.clone();
-            step = step + 1;
+            current_strat = next_strat;
+            step += 1;
 
             match self.solver.solve_step(&current_grid.unwrap()) {
                 Some((strategy, solution, _)) => {
-                    next_grid = Some(solution.clone());
+                    next_grid = Some(solution);
                     next_strat = Some(strategy);
                 }
                 None => {

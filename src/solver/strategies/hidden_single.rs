@@ -51,7 +51,7 @@ impl CandidateMap {
         if let Cell::Unsolved(candidates) = cell {
             for val in candidates.to_vec() {
                 let n: usize = val.into();
-                self.0[n - 1].push(pos.clone());
+                self.0[n - 1].push(*pos);
             }
         }
     }

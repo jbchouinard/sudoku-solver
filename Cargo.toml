@@ -6,6 +6,7 @@ edition = "2018"
 default-run = "sudokusolver"
 
 [features]
+default = ["html"]
 html = ["tera"]
 
 [lib]
