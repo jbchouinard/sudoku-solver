@@ -17,9 +17,7 @@ struct Cli {
     puzzle: String,
 }
 
-fn solve_and_print(puzzle: &str) {
-    let mut sudoku = Grid::from_str(puzzle).unwrap();
-    let solver = Solver::new(all_strategies());
+fn solve_and_print(solver: Solver, mut sudoku: Grid) {
     let start = Instant::now();
     let steps = solver.solve(&mut sudoku);
     for (i, step) in steps.iter().enumerate() {
@@ -32,18 +30,11 @@ fn solve_and_print(puzzle: &str) {
         );
     }
     eprintln!("Total time: {} ms", start.elapsed().as_millis());
-    if sudoku.is_solved() {
-        eprintln!("Solved!");
-    } else {
-        eprintln!("Uh-oh, we couldn't solve that one.");
-    }
-    println!("{}", sudoku.to_string());
+    println!("{}", sudoku);
 }
 
 #[cfg(feature = "html")]
-fn solve_and_render_html(puzzle: &str, out_dir: &str) {
-    let mut sudoku = Grid::from_str(puzzle).unwrap();
-    let solver = Solver::new(all_strategies());
+fn solve_and_render_html(solver: Solver, mut sudoku: Grid, out_dir: &str) {
     let renderer = SolverRenderer::new(solver);
     renderer.solve_and_render(&mut sudoku, out_dir).unwrap();
     println!("{}", sudoku.to_string());
@@ -51,14 +42,16 @@ fn solve_and_render_html(puzzle: &str, out_dir: &str) {
 
 fn main() {
     let args = Cli::from_args();
+    let sudoku = Grid::from_str(&args.puzzle).unwrap();
+    let solver = Solver::new(all_strategies());
 
     #[cfg(feature = "html")]
     match args.html_output_dir {
         Some(dir) => {
-            solve_and_render_html(&args.puzzle, &dir);
+            solve_and_render_html(solver, sudoku, &dir);
         }
         None => {
-            solve_and_print(&args.puzzle);
+            solve_and_print(solver, sudoku);
         }
     }
 

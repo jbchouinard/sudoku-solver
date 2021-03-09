@@ -2,8 +2,10 @@
 
 # SudokuSolver
 
-A sudoku solver written in Rust. It can output solution steps as plain HTML.
-Only basic strategies are implemented so far so it will only solve fairly easy puzzles.
+A sudoku solver written in Rust for fun. It can output solution steps as plain HTML.
+Only basic strategies are implemented so far so it will only mostly solve easy to medium puzzles.
+
+The strategies are inspired by the [SudokuWiki Solver](https://www.sudokuwiki.org/sudoku.htm) documentation.
 
 ## Build
 
@@ -27,12 +29,3 @@ HTML output:
 mkdir html
 sudokusolver -o html PUZZLE
 ```
-
-## Todo
-- Rest of basic strategies from SudokuWiki
-- Tough strategies from SudokuWiki
-- Make strategies configurable
-- Highlight logic in solve steps
-- Trial and error strategy
-- Diabolical strategies from SudokuWiki
-- Extreme strategies from SudokuWiki

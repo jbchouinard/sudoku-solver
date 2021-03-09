@@ -48,7 +48,15 @@ impl<'a> GridRenderer<'a> {
             cells.push(CellRenderer::new(cell).render());
         }
         let mut context = Context::new();
-        context.insert("cells", &cells[0..81]);
+        context.insert(
+            "cells",
+            &self
+                .grid
+                .cells
+                .iter()
+                .map(|cell| CellRenderer::new(cell).render())
+                .collect::<Vec<String>>()[0..81],
+        );
         context
     }
 

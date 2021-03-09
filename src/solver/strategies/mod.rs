@@ -5,25 +5,23 @@ use dyn_clone::{clone_trait_object, DynClone};
 
 use crate::{Candidates, Cell, CellValue, Grid, Position, Unit};
 
-pub use hidden_single::HiddenSingle;
-pub use naked_pair::NakedPair;
-pub use naked_triple::NakedTriple;
-pub use prune_candidates::PruneCandidates;
+mod hidden_n;
+mod naked_n;
+mod sets;
 
-mod hidden_single;
-mod naked_pair;
-mod naked_triple;
-mod prune_candidates;
+use hidden_n::HiddenN;
+use naked_n::NakedN;
 
 pub fn all_strategies() -> Vec<Box<dyn Strategy>> {
     vec![
-        // PruneCandidates must always run first, because other strategies
-        // assume that candidates are in a consistent state with solved cells,
-        // which is only ensured by running PruneCandidates
-        Box::new(UnitStrategyWrapper(PruneCandidates)),
-        Box::new(UnitStrategyWrapper(HiddenSingle)),
-        Box::new(UnitStrategyWrapper(NakedPair)),
-        Box::new(UnitStrategyWrapper(NakedTriple)),
+        Box::new(UnitStrategyWrapper(NakedN::<1>)),
+        Box::new(UnitStrategyWrapper(HiddenN::<1>)),
+        Box::new(UnitStrategyWrapper(NakedN::<2>)),
+        Box::new(UnitStrategyWrapper(HiddenN::<2>)),
+        Box::new(UnitStrategyWrapper(NakedN::<3>)),
+        Box::new(UnitStrategyWrapper(HiddenN::<3>)),
+        Box::new(UnitStrategyWrapper(NakedN::<4>)),
+        Box::new(UnitStrategyWrapper(HiddenN::<4>)),
     ]
 }
 
@@ -86,6 +84,12 @@ impl StrategyDelta {
             .add(&v);
     }
 
+    // For non-overlapping positions only!
+    pub fn extend(&mut self, other: StrategyDelta) {
+        self.solve.extend(other.solve);
+        self.eliminate.extend(other.eliminate);
+    }
+
     pub fn apply(&self, grid: &mut Grid) {
         for (p, val) in &self.solve {
             grid.set_cell(*p, Cell::Solved(*val));
@@ -99,12 +103,6 @@ impl StrategyDelta {
                 grid.set_cell(*p, Cell::Unsolved(pruned));
             }
         }
-    }
-}
-
-impl Default for StrategyDelta {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
@@ -122,6 +120,7 @@ impl fmt::Display for StrategyDelta {
     }
 }
 
+/// A strategy that operates on the whole Sudoku grid.
 pub trait Strategy: DynClone {
     fn name(&self) -> String;
     fn difficulty(&self) -> Difficulty;
@@ -130,40 +129,11 @@ pub trait Strategy: DynClone {
 
 clone_trait_object!(Strategy);
 
-pub trait CellStrategy {
-    fn name(&self) -> String;
-    fn difficulty(&self) -> Difficulty;
-    fn solve_cell(&self, grid: &Grid, pos: Position) -> StrategyDelta;
-}
-
-#[derive(Clone)]
-struct CellStrategyWrapper<T: CellStrategy>(T);
-
-impl<T: CellStrategy + Clone> Strategy for CellStrategyWrapper<T> {
-    fn name(&self) -> String {
-        self.0.name()
-    }
-    fn difficulty(&self) -> Difficulty {
-        self.0.difficulty()
-    }
-    fn solve(&self, grid: &Grid) -> StrategyDelta {
-        for p in Position::grid_vec() {
-            // If the cell changed, candidates may be in an
-            // inconsistent state; break so that PruneCandidates is re-ran
-            // before changing anything else.
-            let delta = self.0.solve_cell(&grid, p);
-            if !delta.is_empty() {
-                return delta;
-            }
-        }
-        StrategyDelta::new()
-    }
-}
-
+/// A strategy that operates on a unit (row, column or box).
 pub trait UnitStrategy {
     fn name(&self) -> String;
     fn difficulty(&self) -> Difficulty;
-    fn solve_unit(&self, grid: &Grid, unit: &Unit) -> StrategyDelta;
+    fn solve_unit(&self, unit: &Unit) -> StrategyDelta;
 }
 
 #[derive(Clone)]
@@ -177,15 +147,28 @@ impl<T: UnitStrategy + Clone> Strategy for UnitStrategyWrapper<T> {
         self.0.difficulty()
     }
     fn solve(&self, grid: &Grid) -> StrategyDelta {
-        for unit_vec in Position::unit_vecs() {
-            let delta = self.0.solve_unit(&grid, &grid.get_cells(unit_vec));
-            // If any of the cells changed, candidates may be in an
-            // inconsistent state; break so that PruneCandidates is re-ran
-            // before changing anything else.
-            if !delta.is_empty() {
-                return delta;
-            }
+        let mut delta = StrategyDelta::new();
+        for vec in Position::row_vecs() {
+            let step_delta = self.0.solve_unit(&grid.get_cells(vec));
+            delta.extend(step_delta);
         }
-        StrategyDelta::new()
+        if !delta.is_empty() {
+            return delta;
+        }
+        for vec in Position::col_vecs() {
+            let step_delta = self.0.solve_unit(&grid.get_cells(vec));
+            delta.extend(step_delta);
+        }
+        if !delta.is_empty() {
+            return delta;
+        }
+        for vec in Position::box_vecs() {
+            let step_delta = self.0.solve_unit(&grid.get_cells(vec));
+            delta.extend(step_delta);
+        }
+        if !delta.is_empty() {
+            return delta;
+        }
+        delta
     }
 }

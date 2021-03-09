@@ -1,17 +1,20 @@
-use std::collections::HashMap;
+use std::convert::TryInto;
+use std::fmt;
 use std::str::FromStr;
+use std::sync::{Arc, Mutex};
+use std::thread;
+
+use num_cpus;
+use structopt::StructOpt;
 
 use sudoku::solver::strategies::all_strategies;
 use sudoku::solver::{SolutionStep, Solver};
-use sudoku::{Error, Grid, Result};
+use sudoku::stats::{Count, Formatted, Maximum, Mean, Minimum, Report, ReportBuilder};
+use sudoku::{Error, Grid};
 
-const EASY_PUZZLES_STR: &str = include_str!("../puzzles/easy.txt");
-const MEDIUM_PUZZLES_STR: &str = include_str!("../puzzles/medium.txt");
-const HARD_PUZZLES_STR: &str = include_str!("../puzzles/hard.txt");
-const DIABOLICAL_PUZZLES_STR: &str = include_str!("../puzzles/diabolical.txt");
+const PUZZLE_STR: &str = include_str!("../puzzles/benchmark.txt");
 
 struct Puzzle {
-    id: String,
     grid: Grid,
     rating: f64,
 }
@@ -19,131 +22,172 @@ struct Puzzle {
 impl FromStr for Puzzle {
     type Err = Error;
     fn from_str(s: &str) -> std::result::Result<Self, <Self as FromStr>::Err> {
-        let parts: Vec<&str> = s.split(' ').collect();
-        if parts.len() != 3 {
-            return Err(Error::new("Invalid puzzle format"));
-        }
-        let id = parts[0];
-        let puzzle_str = parts[1];
-        let rating = parts[2];
-        let grid = Grid::from_str(puzzle_str)?;
+        let [_, puzzle_str, rating]: [&str; 3] = s
+            .split(' ')
+            .collect::<Vec<&str>>()
+            .try_into()
+            .expect("puzzle should be str like '<id> <puzzle> <rating>'");
         Ok(Puzzle {
-            id: id.to_string(),
-            grid,
+            grid: Grid::from_str(puzzle_str)?,
             rating: rating.parse().unwrap(),
         })
     }
 }
 
-fn parse_puzzles(s: &str) -> Result<HashMap<String, Puzzle>> {
-    let mut map: HashMap<String, Puzzle> = HashMap::new();
-    for puzzle_str in s.split('\n') {
-        let puzzle = Puzzle::from_str(puzzle_str)?;
-        map.insert(puzzle.id.clone(), puzzle);
-    }
-    Ok(map)
+fn parse_puzzles(s: &str) -> Vec<Puzzle> {
+    s.trim()
+        .split('\n')
+        .map(|s| Puzzle::from_str(s).unwrap())
+        .collect()
 }
 
-struct RunningAverage {
-    count: f64,
-    sum: f64,
+struct BenchmarkReport {
+    report: Report<f64>,
 }
 
-impl RunningAverage {
+impl BenchmarkReport {
     fn new() -> Self {
-        Self {
-            count: 0.0,
-            sum: 0.0,
+        BenchmarkReport {
+            report: ReportBuilder::new()
+                .with("Puzzles", Formatted::new(Box::new(Count::new()), "", 0))
+                .with("% Solved", Formatted::new(Box::new(Mean::new()), "%", 1))
+                .with(
+                    "Solve Steps",
+                    Formatted::new(Box::new(Minimum::new()), "", 0),
+                )
+                .with("Solve Steps", Formatted::new(Box::new(Mean::new()), "", 0))
+                .with(
+                    "Solve Steps",
+                    Formatted::new(Box::new(Maximum::new()), "", 0),
+                )
+                .with(
+                    "Difficulty Rating",
+                    Formatted::new(Box::new(Minimum::new()), "", 1),
+                )
+                .with(
+                    "Difficulty Rating",
+                    Formatted::new(Box::new(Mean::new()), "", 1),
+                )
+                .with(
+                    "Difficulty Rating",
+                    Formatted::new(Box::new(Maximum::new()), "", 1),
+                )
+                .with(
+                    "Solve Time",
+                    Formatted::new(Box::new(Minimum::new()), "ms", 0),
+                )
+                .with("Solve Time", Formatted::new(Box::new(Mean::new()), "μs", 0))
+                .with(
+                    "Solve Time",
+                    Formatted::new(Box::new(Maximum::new()), "ms", 1),
+                )
+                .build(),
         }
     }
-    fn update(&mut self, value: f64) {
-        self.count += 1.0;
-        self.sum += value;
-    }
-    fn average(&self) -> f64 {
-        self.sum / self.count
+
+    fn add_measurement(&mut self, m: &Measurement) {
+        self.report.update("Puzzles", 1.0);
+        self.report.update("Difficulty Rating", m.rating);
+        self.report.update("Solve Steps", m.solve_steps);
+        self.report.update("Solve Time", m.solve_time);
+        if m.solved {
+            self.report.update("% Solved", 100.0);
+        } else {
+            self.report.update("% Solved", 0.0);
+        }
     }
 }
 
-struct Benchmark {
-    total: u64,
-    solved: u64,
-    hardest_rating: f64,
-    hardest_rating_solved: f64,
-    avg_steps: RunningAverage,
-    avg_steps_solved: RunningAverage,
-    avg_time: RunningAverage,
-    avg_time_solved: RunningAverage,
+#[derive(Copy, Clone)]
+pub struct Measurement {
+    solved: bool,
+    rating: f64,
+    solve_time: f64,
+    solve_steps: f64,
 }
 
-impl Benchmark {
-    fn new() -> Self {
-        Benchmark {
-            total: 0,
-            solved: 0,
-            hardest_rating: 0.0,
-            hardest_rating_solved: 0.0,
-            avg_steps: RunningAverage::new(),
-            avg_steps_solved: RunningAverage::new(),
-            avg_time: RunningAverage::new(),
-            avg_time_solved: RunningAverage::new(),
+impl Measurement {
+    fn new(puzzle: &Puzzle, steps: &[SolutionStep]) -> Self {
+        Measurement {
+            solved: puzzle.grid.is_solved(),
+            rating: puzzle.rating,
+            solve_time: Self::total_time(steps),
+            solve_steps: steps.len() as f64,
         }
     }
     fn total_time(steps: &[SolutionStep]) -> f64 {
-        let mut total: f64 = 0.0;
-        for step in steps {
-            total += step.time.as_micros() as f64;
-        }
-        total
-    }
-    fn add(&mut self, puz: &Puzzle, steps: &[SolutionStep]) {
-        self.total += 1;
-        self.hardest_rating = self.hardest_rating.max(puz.rating);
-        self.avg_steps.update(steps.len() as f64);
-        self.avg_time.update(Self::total_time(steps));
-        if puz.grid.is_solved() {
-            self.solved += 1;
-            self.hardest_rating_solved = self.hardest_rating_solved.max(puz.rating);
-            self.avg_steps_solved.update(steps.len() as f64);
-            self.avg_time_solved.update(Self::total_time(steps));
-        }
-    }
-    fn print_summary(&self) {
-        println!(
-            "Solved {} of {} puzzles ({:.1}%)",
-            self.solved,
-            self.total,
-            100 * self.solved / self.total
-        );
-        println!("All puzzles--------------");
-        println!("Hardest rating: {:.1}", self.hardest_rating);
-        println!("Average steps: {:.1}", self.avg_steps.average());
-        println!("Average time: {:.0} μs", self.avg_time.average());
-        println!("Solved puzzles-----------");
-        println!("Hardest rating: {:.1}", self.hardest_rating_solved);
-        println!("Average steps: {:.1}", self.avg_steps_solved.average());
-        println!("Average time: {:.0} μs", self.avg_time_solved.average());
+        steps
+            .iter()
+            .map(|s| (s.time.as_micros() as f64) / 1000.0)
+            .sum()
     }
 }
 
-fn run_benchmark(puzzles_str: &str) -> Benchmark {
-    let solver = Solver::new(all_strategies());
-    let puzzles = parse_puzzles(puzzles_str).unwrap();
-    let mut benchmark = Benchmark::new();
-    for (_, mut puz) in puzzles {
-        let sol = solver.solve(&mut puz.grid);
-        benchmark.add(&puz, &sol);
+impl fmt::Display for BenchmarkReport {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::result::Result<(), fmt::Error> {
+        write!(f, "{}", self.report)
     }
-    benchmark
+}
+
+fn run_benchmark(puzzles: Vec<Puzzle>) -> Vec<Measurement> {
+    let mut ms = vec![];
+    let solver = Solver::new(all_strategies());
+    for mut puz in puzzles {
+        let sol = solver.solve(&mut puz.grid);
+        ms.push(Measurement::new(&puz, &sol));
+    }
+    ms
+}
+
+fn round_robin_split<T>(vec: Vec<T>, n: usize) -> Vec<Vec<T>> {
+    let mut vv: Vec<Vec<T>> = (0..n).map(|_| vec![]).collect();
+    for (i, elem) in vec.into_iter().enumerate() {
+        vv[i % n].push(elem);
+    }
+    vv
+}
+
+#[derive(Debug, StructOpt)]
+struct Cli {
+    #[structopt(long, short)]
+    threads: Option<usize>,
 }
 
 fn main() {
-    println!("EASY PUZZLES...");
-    run_benchmark(EASY_PUZZLES_STR).print_summary();
-    println!("\nMEDIUM PUZZLES...");
-    run_benchmark(MEDIUM_PUZZLES_STR).print_summary();
-    println!("\nHARD PUZZLES...");
-    run_benchmark(HARD_PUZZLES_STR).print_summary();
-    println!("\nDIABOLICAL PUZZLES...");
-    run_benchmark(DIABOLICAL_PUZZLES_STR).print_summary();
+    let args = Cli::from_args();
+    let puzzles = parse_puzzles(PUZZLE_STR);
+
+    let threads = match args.threads {
+        Some(n) => n,
+        None => num_cpus::get(),
+    };
+    eprintln!("starting benchmark with {} threads...", threads);
+    if threads == 0 {
+        let mut measurements = vec![];
+        measurements.extend(run_benchmark(puzzles));
+        let mut benchmark = BenchmarkReport::new();
+        for m in measurements.iter() {
+            benchmark.add_measurement(m);
+        }
+        println!("{}", benchmark);
+    } else {
+        let measurements = Arc::new(Mutex::new(vec![]));
+        let puzzle_groups = round_robin_split(puzzles, threads);
+        let mut handles = vec![];
+        for puzzles in puzzle_groups.into_iter() {
+            let measurements = measurements.clone();
+            handles.push(thread::spawn(move || {
+                let ms = run_benchmark(puzzles);
+                measurements.lock().unwrap().extend(ms);
+            }));
+        }
+        for h in handles {
+            h.join().unwrap();
+        }
+        let mut benchmark = BenchmarkReport::new();
+        for m in measurements.lock().unwrap().iter() {
+            benchmark.add_measurement(m);
+        }
+        println!("{}", benchmark);
+    }
 }

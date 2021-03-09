@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+#![allow(clippy::new_without_default)]
+use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
 use std::fmt;
 use std::num::ParseIntError;
@@ -6,8 +7,8 @@ use std::str::FromStr;
 
 #[cfg(feature = "html")]
 pub mod html;
-
 pub mod solver;
+pub mod stats;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub struct CellValue(u8);
@@ -164,7 +165,7 @@ impl FromStr for Cell {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub struct Position {
     col: u8,
     row: u8,
@@ -172,8 +173,9 @@ pub struct Position {
 
 impl Position {
     pub fn new(col: u8, row: u8) -> Position {
-        if !(1..=9).contains(&col) || (row < 1) || (row > 9) {
-            panic!("out of bounds");
+        let bound = 1..=9;
+        if !bound.contains(&col) || !bound.contains(&row) {
+            panic!("Position out of bounds");
         }
         Self { col, row }
     }
@@ -186,24 +188,9 @@ impl Position {
         self.col
     }
 
-    pub fn index(&self) -> usize {
-        ((self.col - 1) + (self.row - 1) * 9).into()
-    }
-
     fn box_range(coord: u8) -> std::ops::Range<u8> {
         let low = 1 + ((coord - 1) / 3) * 3;
         low..low + 3
-    }
-
-    /// All positions in a grid
-    pub fn grid_vec() -> Vec<Self> {
-        let mut v = vec![];
-        for col in 1..=9 {
-            for row in 1..=9 {
-                v.push(Position::new(col, row));
-            }
-        }
-        v
     }
 
     /// Positions for the row containing this position
@@ -241,38 +228,50 @@ impl Position {
         v
     }
 
+    /// Positions "seen" by this posititon (in the same row, column or box)
+    pub fn seen_vec(&self, include_self: bool) -> Vec<Self> {
+        let s: HashSet<Position> = self
+            .col_vec(include_self)
+            .into_iter()
+            .chain(self.row_vec(include_self).into_iter())
+            .chain(self.box_vec(include_self).into_iter())
+            .collect();
+        s.into_iter().collect()
+    }
+
+    /// All positions in a grid
+    pub fn grid_vec() -> Vec<Self> {
+        (1..=9)
+            .flat_map(|col| (1..9).map(move |row| Position::new(col, row)))
+            .collect()
+    }
+
+    pub fn row_vecs() -> Vec<Vec<Self>> {
+        (1..=9).map(|i| Position::new(1, i).row_vec(true)).collect()
+    }
+
+    pub fn col_vecs() -> Vec<Vec<Self>> {
+        (1..=9).map(|i| Position::new(i, 1).col_vec(true)).collect()
+    }
+
+    pub fn box_vecs() -> Vec<Vec<Self>> {
+        (1..=9)
+            .step_by(3)
+            .flat_map(|col| {
+                (1..=9)
+                    .step_by(3)
+                    .map(move |row| Position::new(col, row).box_vec(true))
+            })
+            .collect()
+    }
+
     /// Positions for all units (row, column, box) in a grid
     pub fn unit_vecs() -> Vec<Vec<Self>> {
         let mut units = vec![];
-        // Iterate each unit (row, col, box)
-        for r in 1..=9 {
-            units.push(Position::new(1, r).row_vec(true));
-        }
-        for c in 1..=9 {
-            units.push(Position::new(c, 1).col_vec(true));
-        }
-        for r in (1..=9).step_by(3) {
-            for c in (1..=9).step_by(3) {
-                units.push(Position::new(c, r).box_vec(true));
-            }
-        }
+        units.append(&mut Self::row_vecs());
+        units.append(&mut Self::col_vecs());
+        units.append(&mut Self::box_vecs());
         units
-    }
-
-    /// Positions "seen" by this posititon (in the same row, column or box)
-    pub fn seen_vec(&self, include_self: bool) -> Vec<Self> {
-        let mut v = self.box_vec(include_self);
-        for p in self.col_vec(include_self).into_iter() {
-            if !v.contains(&p) {
-                v.push(p)
-            }
-        }
-        for p in self.row_vec(include_self).into_iter() {
-            if !v.contains(&p) {
-                v.push(p)
-            }
-        }
-        v
     }
 }
 
@@ -294,46 +293,31 @@ impl Grid {
         }
     }
 
-    pub fn get_cell(&self, pos: Position) -> Cell {
-        self.cells[pos.index()]
+    fn index(pos: &Position) -> usize {
+        ((pos.col - 1) + (pos.row - 1) * 9).into()
     }
 
-    pub fn set_cell(&mut self, pos: Position, cell: Cell) -> bool {
-        let new_cell = cell.to_solved();
-        let old_cell = self.get_cell(pos);
-        if new_cell == old_cell {
-            false
-        } else {
-            self.cells[pos.index()] = new_cell;
-            true
-        }
+    pub fn get_cell(&self, pos: Position) -> Cell {
+        self.cells[Self::index(&pos)]
+    }
+
+    pub fn set_cell(&mut self, pos: Position, cell: Cell) {
+        self.cells[Self::index(&pos)] = cell.to_solved();
     }
 
     pub fn get_cells(&self, pos: Vec<Position>) -> Unit {
-        let mut u = Unit::new();
-        for p in pos {
-            u.insert(p, self.get_cell(p));
-        }
-        u
+        pos.iter().map(|p| (*p, self.get_cell(*p))).collect()
     }
 
-    pub fn set_cells(&mut self, unit: Unit) -> u16 {
-        let mut changed_count = 0;
+    pub fn set_cells(&mut self, unit: Unit) {
         for (p, cell) in unit.into_iter() {
-            if self.set_cell(p, cell) {
-                changed_count += 1;
-            }
+            self.set_cell(p, cell);
         }
-        changed_count
-    }
-
-    pub fn is_valid(&self) -> bool {
-        true
     }
 
     pub fn is_solved(&self) -> bool {
-        for i in 0..81 {
-            if let Cell::Unsolved(_) = self.cells[i] {
+        for cell in self.cells.iter() {
+            if let Cell::Unsolved(_) = cell {
                 return false;
             }
         }
@@ -348,23 +332,28 @@ impl FromStr for Grid {
         if s.len() != 81 {
             return Err(Error::new("Puzzle string must have 81 characters"));
         }
-        let mut cells = vec![];
-        for i in 0..81 {
-            cells.push(Cell::from_str(&s[i..i + 1]).unwrap())
-        }
         Ok(Grid {
-            cells: cells[0..81].try_into().unwrap(),
+            cells: s
+                .chars()
+                .map(|digit| Cell::from_str(&digit.to_string()).unwrap())
+                .collect::<Vec<Cell>>()[0..81]
+                .try_into()
+                .unwrap(),
         })
     }
 }
 
 impl fmt::Display for Grid {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut parts = vec![];
-        for v in self.cells.iter() {
-            parts.push(v.to_string());
-        }
-        write!(f, "{}", parts.join(""))
+        write!(
+            f,
+            "{}",
+            self.cells
+                .iter()
+                .map(|v| v.to_string())
+                .collect::<Vec<String>>()
+                .join("")
+        )
     }
 }
 

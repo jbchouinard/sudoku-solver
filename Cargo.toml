@@ -1,6 +1,6 @@
 [package]
 name = "sudokusolver"
-version = "0.3.1"
+version = "0.4.0"
 authors = ["Jerome Boisvert-Chouinard <me@jbchouinard.net>"]
 edition = "2018"
 default-run = "sudokusolver"
@@ -23,9 +23,11 @@ path = "src/benchmark.rs"
 
 [dependencies]
 dyn-clone = "1"
+num_cpus = "1"
 lazy_static = "1"
 structopt = "0.3"
 tera = {version="1", default-features=false, optional=true}
 
 [dev-dependencies]
+maplit = "1"
 test-case = "1.1.0"
