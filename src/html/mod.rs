@@ -133,7 +133,7 @@ impl SolverRenderer {
         let mut step = 0;
         let mut strat = None;
         let mut prev_strat = None;
-        let mut prev_grid = grid.clone();
+        let mut prev_grid = *grid;
         let mut finished = false;
         loop {
             if finished {
@@ -162,7 +162,7 @@ impl SolverRenderer {
 
             step += 1;
             prev_strat = strat.clone();
-            prev_grid = grid.clone();
+            prev_grid = *grid;
         }
         Ok(())
     }
