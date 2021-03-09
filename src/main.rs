@@ -24,11 +24,11 @@ fn solve_and_print(puzzle: &str) {
     let steps = solver.solve(&mut sudoku);
     for (i, step) in steps.iter().enumerate() {
         eprintln!(
-            "{} {}: {} ({} μs)",
+            "{} {} ({} μs) : {} ",
             i,
             &step.strategy.name(),
-            step.delta,
             step.time.as_micros(),
+            step.delta,
         );
     }
     eprintln!("Total time: {} ms", start.elapsed().as_millis());
@@ -42,11 +42,11 @@ fn solve_and_print(puzzle: &str) {
 
 #[cfg(feature = "html")]
 fn solve_and_render_html(puzzle: &str, out_dir: &str) {
-    let sudoku = Grid::from_str(puzzle).unwrap();
+    let mut sudoku = Grid::from_str(puzzle).unwrap();
     let solver = Solver::new(all_strategies());
     let renderer = SolverRenderer::new(solver);
-    let solved_grid = renderer.solve_and_render(sudoku, out_dir).unwrap();
-    println!("{}", solved_grid.to_string());
+    renderer.solve_and_render(&mut sudoku, out_dir).unwrap();
+    println!("{}", sudoku.to_string());
 }
 
 fn main() {

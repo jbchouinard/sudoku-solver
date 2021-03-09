@@ -118,7 +118,7 @@ impl fmt::Display for StrategyDelta {
         for (p, cdx) in &self.eliminate {
             parts.push(format!("{}-{}", p, cdx));
         }
-        write!(f, "{}", parts.join(","))
+        write!(f, "{}", parts.join(", "))
     }
 }
 

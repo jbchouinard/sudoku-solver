@@ -1,9 +1,9 @@
 {% include "header.html" -%}
 <h1>Sudoku Solver</h1>
-<p>{{ strategy }}</p>
+<p>{{ step }}. {{ strategy }}</p>
 <div class="linkbox">
 {% if link_prev != "" -%}
-<a href="step1.html">&lt;|</a>
+<a href="step_0000.html">&lt;|</a>
 <a href="{{ link_prev }}">&lt;&lt;</a>
 {% else -%}
 <span>&lt;|</span>

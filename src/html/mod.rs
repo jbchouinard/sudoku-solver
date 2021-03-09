@@ -90,17 +90,6 @@ impl SolverRenderer {
     pub fn new(solver: Solver) -> Self {
         Self { solver }
     }
-
-    fn link(n: usize) -> String {
-        let name: String;
-        if n == 0 {
-            name = "index".to_string();
-        } else {
-            name = format!("step{}", n);
-        }
-        format!("{}.html", name)
-    }
-
     fn strategy_string(strat: Option<Box<dyn Strategy>>) -> String {
         match strat {
             Some(strategy) => {
@@ -120,58 +109,61 @@ impl SolverRenderer {
     ) -> String {
         let mut context = GridRenderer::new(grid).tera_context();
         let link_prev_url = if link_prev {
-            Self::link(step - 1)
+            format!("step_{:04}.html", (step - 1))
         } else {
             "".to_string()
         };
         let link_next_url = if link_next {
-            Self::link(step + 1)
+            format!("step_{:04}.html", (step + 1))
         } else {
             "".to_string()
         };
+        context.insert("step", &step);
         context.insert("strategy", strat);
         context.insert("link_prev", &link_prev_url);
         context.insert("link_next", &link_next_url);
         TERA.render("sudoku_step.html", &context).unwrap()
     }
 
-    pub fn solve_and_render(&self, grid: Grid, output_dir: &str) -> Result<Grid, std::io::Error> {
+    pub fn solve_and_render(
+        &self,
+        grid: &mut Grid,
+        output_dir: &str,
+    ) -> Result<(), std::io::Error> {
         let mut step = 0;
-        let mut current_strat;
-        let mut next_strat = None;
-        let mut prev_grid;
-        let mut current_grid = None;
-        let mut next_grid = Some(grid);
+        let mut strat = None;
+        let mut prev_strat = None;
+        let mut prev_grid = grid.clone();
+        let mut finished = false;
         loop {
-            if next_grid.is_none() {
+            if finished {
                 break;
             }
 
-            prev_grid = current_grid;
-            current_grid = next_grid;
-            current_strat = next_strat.clone();
-            step += 1;
-
-            match self.solver.solve_step(&next_grid.unwrap()) {
+            match self.solver.solve_step(&grid) {
                 Some(step) => {
-                    next_strat = Some(step.strategy);
+                    step.delta.apply(grid);
+                    strat = Some(step.strategy);
                 }
                 None => {
-                    next_grid = None;
-                    next_strat = None;
+                    finished = true;
                 }
             }
             fs::write(
-                format!("{}/{}", output_dir, Self::link(step)),
+                format!("{}/{}", output_dir, format!("step_{:04}.html", step)),
                 self.render_step(
-                    &current_grid.unwrap(),
+                    &prev_grid,
                     step,
-                    &Self::strategy_string(current_strat),
-                    prev_grid.is_some(),
-                    next_grid.is_some(),
+                    &Self::strategy_string(prev_strat),
+                    step != 0,
+                    !finished,
                 ),
             )?;
+
+            step += 1;
+            prev_strat = strat.clone();
+            prev_grid = grid.clone();
         }
-        Ok(current_grid.unwrap())
+        Ok(())
     }
 }
