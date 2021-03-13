@@ -9,6 +9,8 @@ The strategies are inspired by the [SudokuWiki Solver](https://www.sudokuwiki.or
 
 ## Build
 
+This project depends on features only on nightly toolchain.
+
 ```bash
 cargo build --release --features html
 ```
