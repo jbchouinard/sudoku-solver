@@ -76,7 +76,7 @@ impl BenchmarkReport {
                     "Solve Time",
                     Formatted::new(Box::new(Minimum::new()), "ms", 0),
                 )
-                .with("Solve Time", Formatted::new(Box::new(Mean::new()), "μs", 0))
+                .with("Solve Time", Formatted::new(Box::new(Mean::new()), "ms", 0))
                 .with(
                     "Solve Time",
                     Formatted::new(Box::new(Maximum::new()), "ms", 1),
