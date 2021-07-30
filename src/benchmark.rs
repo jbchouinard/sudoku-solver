@@ -5,12 +5,12 @@ use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
-use num_cpus;
 use structopt::StructOpt;
 
 use sudoku::solver::strategies::all_strategies;
 use sudoku::solver::{SolutionStep, Solver};
 use sudoku::stats::{Count, Formatted, Maximum, Mean, Minimum, Report, ReportBuilder};
+use sudoku::threads::ThreadMode;
 use sudoku::{Error, Grid};
 
 const PUZZLE_STR: &str = include_str!("../puzzles/benchmark.txt");
@@ -103,7 +103,7 @@ impl<'a> FromIterator<&'a Measurement> for BenchmarkReport {
     fn from_iter<I: IntoIterator<Item = &'a Measurement>>(iter: I) -> Self {
         let mut benchmark = BenchmarkReport::new();
         for m in iter {
-            benchmark.add_measurement(&m);
+            benchmark.add_measurement(m);
         }
         benchmark
     }
@@ -160,38 +160,38 @@ fn round_robin_split<T>(vec: Vec<T>, n: usize) -> Vec<Vec<T>> {
 
 #[derive(Debug, StructOpt)]
 struct Cli {
-    #[structopt(long, short)]
-    threads: Option<usize>,
+    #[structopt(long, short, default_value)]
+    threads: ThreadMode,
 }
 
 fn main() {
     let args = Cli::from_args();
     let puzzles = parse_puzzles(PUZZLE_STR);
 
-    let threads = match args.threads {
-        Some(n) => n,
-        None => num_cpus::get(),
-    };
-    eprintln!("starting benchmark with {} threads...", threads);
-    if threads == 0 {
-        let mut measurements = vec![];
-        measurements.extend(run_benchmark(puzzles));
-        let benchmark: BenchmarkReport = measurements.iter().collect();
-        println!("{}", benchmark);
-    } else {
-        let measurements = Arc::new(Mutex::new(vec![]));
-        let puzzle_groups = round_robin_split(puzzles, threads);
-        let mut handles = vec![];
-        for puzzles in puzzle_groups.into_iter() {
-            let measurements = measurements.clone();
-            handles.push(thread::spawn(move || {
-                measurements.lock().unwrap().extend(run_benchmark(puzzles));
-            }));
+    eprintln!("starting benchmark with {} threads...", args.threads);
+    match args.threads {
+        ThreadMode::SingleThreaded => {
+            let mut measurements = vec![];
+            measurements.extend(run_benchmark(puzzles));
+            let benchmark: BenchmarkReport = measurements.iter().collect();
+            println!("{}", benchmark);
         }
-        for h in handles {
-            h.join().unwrap();
+        ThreadMode::MultiThreaded(threads) => {
+            let measurements = Arc::new(Mutex::new(vec![]));
+            let puzzle_groups = round_robin_split(puzzles, threads);
+            let mut handles = vec![];
+            for puzzles in puzzle_groups.into_iter() {
+                let measurements = measurements.clone();
+                handles.push(thread::spawn(move || {
+                    let res = run_benchmark(puzzles);
+                    measurements.lock().unwrap().extend(res);
+                }));
+            }
+            for h in handles {
+                h.join().unwrap();
+            }
+            let benchmark: BenchmarkReport = measurements.lock().unwrap().iter().collect();
+            println!("{}", benchmark);
         }
-        let benchmark: BenchmarkReport = measurements.lock().unwrap().iter().collect();
-        println!("{}", benchmark);
     }
 }

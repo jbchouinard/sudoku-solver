@@ -78,7 +78,7 @@ impl<'a> CellRenderer<'a> {
         let mut context = Context::new();
         match self.cell {
             Cell::Solved(cell) => {
-                let v: u8 = cell.clone().into();
+                let v: u8 = (*cell).into();
                 context.insert("cell", &v);
                 TERA.render("number.html", &context).unwrap()
             }
@@ -148,7 +148,7 @@ impl SolverRenderer {
                 break;
             }
 
-            match self.solver.solve_step(&grid) {
+            match self.solver.solve_step(grid) {
                 Some(step) => {
                     step.delta.apply(grid);
                     strat = Some(step.strategy);

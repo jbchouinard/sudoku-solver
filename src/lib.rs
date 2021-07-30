@@ -9,6 +9,7 @@ use std::str::FromStr;
 pub mod html;
 pub mod solver;
 pub mod stats;
+pub mod threads;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub struct CellValue(u8);

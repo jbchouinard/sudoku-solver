@@ -58,7 +58,7 @@ where
     fn get_vs(&self, ks: &HashSet<K>) -> HashSet<V> {
         let mut vs = HashSet::new();
         for k in ks {
-            if let Some(k_vs) = self.0.get(&k) {
+            if let Some(k_vs) = self.0.get(k) {
                 vs.extend(k_vs.iter().cloned());
             }
         }
