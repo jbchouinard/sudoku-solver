@@ -1,5 +1,6 @@
 use std::convert::TryInto;
 use std::fmt;
+use std::iter::FromIterator;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -98,6 +99,16 @@ impl BenchmarkReport {
     }
 }
 
+impl<'a> FromIterator<&'a Measurement> for BenchmarkReport {
+    fn from_iter<I: IntoIterator<Item = &'a Measurement>>(iter: I) -> Self {
+        let mut benchmark = BenchmarkReport::new();
+        for m in iter {
+            benchmark.add_measurement(&m);
+        }
+        benchmark
+    }
+}
+
 #[derive(Copy, Clone)]
 pub struct Measurement {
     solved: bool,
@@ -165,10 +176,7 @@ fn main() {
     if threads == 0 {
         let mut measurements = vec![];
         measurements.extend(run_benchmark(puzzles));
-        let mut benchmark = BenchmarkReport::new();
-        for m in measurements.iter() {
-            benchmark.add_measurement(m);
-        }
+        let benchmark: BenchmarkReport = measurements.iter().collect();
         println!("{}", benchmark);
     } else {
         let measurements = Arc::new(Mutex::new(vec![]));
@@ -177,17 +185,13 @@ fn main() {
         for puzzles in puzzle_groups.into_iter() {
             let measurements = measurements.clone();
             handles.push(thread::spawn(move || {
-                let ms = run_benchmark(puzzles);
-                measurements.lock().unwrap().extend(ms);
+                measurements.lock().unwrap().extend(run_benchmark(puzzles));
             }));
         }
         for h in handles {
             h.join().unwrap();
         }
-        let mut benchmark = BenchmarkReport::new();
-        for m in measurements.lock().unwrap().iter() {
-            benchmark.add_measurement(m);
-        }
+        let benchmark: BenchmarkReport = measurements.lock().unwrap().iter().collect();
         println!("{}", benchmark);
     }
 }
